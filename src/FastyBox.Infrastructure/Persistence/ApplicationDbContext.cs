@@ -22,6 +22,7 @@ namespace FastyBox.Infrastructure.Persistence
             _dateTime = dateTime;
         }
 
+        // Entity DbSets
         public DbSet<Tenant> Tenants => Set<Tenant>();
         public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
         public DbSet<Address> Addresses => Set<Address>();
@@ -57,20 +58,69 @@ namespace FastyBox.Infrastructure.Persistence
                         entry.Entity.LastModifiedAt = _dateTime.UtcNow;
                         break;
                 }
-
             }
 
             var result = await base.SaveChangesAsync(cancellationToken);
-
             return result;
         }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
+
+            // Apply entity configurations from assembly
             builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
+            // Las relaciones específicas ahora están en las clases de configuración
+            // Solamente definimos relaciones que no están en clases de configuración aquí
+            ConfigureAdditionalRelationships(builder);
+
             // Apply global query filter for soft delete
+            ApplySoftDeleteFilter(builder);
+
+            // Apply global query filter for multi-tenancy
+            ApplyMultiTenancyFilter(builder);
+        }
+
+        private void ConfigureAdditionalRelationships(ModelBuilder builder)
+        {
+            // Estas son relaciones que no están definidas en las clases de configuración
+
+            // Shipment items, documents, status history, notes
+            builder.Entity<Shipment>()
+                .HasMany(s => s.Items)
+                .WithOne(i => i.Shipment)
+                .HasForeignKey(i => i.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Shipment>()
+                .HasMany(s => s.Documents)
+                .WithOne(d => d.Shipment)
+                .HasForeignKey(d => d.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Shipment>()
+                .HasMany(s => s.StatusHistory)
+                .WithOne(sh => sh.Shipment)
+                .HasForeignKey(sh => sh.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Shipment>()
+                .HasMany(s => s.Notes)
+                .WithOne(n => n.Shipment)
+                .HasForeignKey(n => n.ShipmentId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Address relationship
+            builder.Entity<Address>()
+                .HasOne<ApplicationUser>(a => a.User)
+                .WithOne(u => u.DefaultAddress)
+                .HasForeignKey<Address>(a => a.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
+        }
+
+        private void ApplySoftDeleteFilter(ModelBuilder builder)
+        {
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
                 // Check if the entity inherits from BaseEntity
@@ -85,8 +135,10 @@ namespace FastyBox.Infrastructure.Persistence
                     builder.Entity(entityType.ClrType).HasQueryFilter(lambda);
                 }
             }
+        }
 
-            // Apply global query filter for multi-tenancy
+        private void ApplyMultiTenancyFilter(ModelBuilder builder)
+        {
             foreach (var entityType in builder.Model.GetEntityTypes())
             {
                 // Check if the entity inherits from BaseTenantEntity
@@ -108,5 +160,4 @@ namespace FastyBox.Infrastructure.Persistence
                 (_currentUserService.TenantId == null || e.TenantId == _currentUserService.TenantId));
         }
     }
-
 }

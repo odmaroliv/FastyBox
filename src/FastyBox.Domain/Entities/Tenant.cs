@@ -12,7 +12,9 @@ namespace FastyBox.Domain.Entities
         public bool IsActive { get; set; }
         public Guid? ParentTenantId { get; set; }
         public virtual Tenant ParentTenant { get; set; }
+
         public virtual ICollection<Tenant> ChildTenants { get; set; } = new List<Tenant>();
+
         public virtual ICollection<ApplicationUser> Users { get; set; } = new List<ApplicationUser>();
         public virtual ICollection<Shipment> Shipments { get; set; } = new List<Shipment>();
         public virtual TenantSettings Settings { get; set; }

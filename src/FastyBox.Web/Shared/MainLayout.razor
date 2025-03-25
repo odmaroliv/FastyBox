@@ -2,45 +2,55 @@
 @inject IJSRuntime JSRuntime
 @inject IStringLocalizer<SharedResource> L
 @inject NavigationManager NavigationManager
+@inject IUserService UserService
 
 <div class="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col">
     <header class="bg-white dark:bg-gray-800 shadow-sm">
         <div class="flex justify-between items-center px-4 py-2 sm:px-6 lg:px-8">
             <div class="flex items-center">
-                <button type="button" @onclick="ToggleSidebar" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                    </svg>
-                </button>
+                <AuthorizeView>
+                    <Authorized>
+                        <button type="button" @onclick="ToggleSidebar" class="text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                            </svg>
+                        </button>
+                    </Authorized>
+                </AuthorizeView>
                 <a href="/" class="ml-4 flex items-center">
                     <span class="text-xl font-bold text-primary-600 dark:text-primary-500">FastyBox</span>
                 </a>
             </div>
             <div class="flex items-center space-x-4">
                 <LanguageSelector />
-                <div class="relative">
-                    <NotificationsMenu />
-                </div>
+
                 <AuthorizeView>
                     <Authorized>
+                        <div class="relative">
+                            <NotificationsMenu />
+                        </div>
                         <UserMenu />
                     </Authorized>
                     <NotAuthorized>
                         <div class="flex space-x-2">
-                            <a href="/identity/account/login" class="btn btn-ghost">@L["SignIn"]</a>
-                            <a href="/identity/account/register" class="btn btn-primary">@L["SignUp"]</a>
+                            <a href="/Identity/Account/Login" class="btn btn-ghost">@L["SignIn"]</a>
+                            <a href="/Identity/Account/Register" class="btn btn-primary">@L["SignUp"]</a>
                         </div>
                     </NotAuthorized>
                 </AuthorizeView>
+
                 <ThemeToggle />
             </div>
         </div>
     </header>
-
     <div class="flex flex-1 overflow-hidden">
-        <nav id="sidebar" class="@(_sidebarOpen ? 'block' : 'hidden') md:block w-64 bg-white dark:bg-gray-800 shadow-soft overflow-y-auto transition-all duration-300">
-            <NavMenu />
-        </nav>
+        <AuthorizeView>
+            <Authorized>
+                <nav id="sidebar" class="@(_sidebarOpen ? "block" : "hidden") md:block w-64 bg-white dark:bg-gray-800 shadow-soft overflow-y-auto transition-all duration-300">
+                    <NavMenu />
+                </nav>
+            </Authorized>
+        </AuthorizeView>
 
         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
             <div class="max-w-7xl mx-auto">
@@ -59,15 +69,22 @@
 @code {
     private bool _sidebarOpen = false;
     private bool _isDarkMode = false;
+    private bool _isAuthenticated = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Verificar si el usuario está autenticado
+        var userId = await UserService.GetCurrentUserIdAsync();
+        _isAuthenticated = !string.IsNullOrEmpty(userId);
+    }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         if (firstRender)
         {
+            // Move JavaScript interop to OnAfterRenderAsync
             _isDarkMode = await JSRuntime.InvokeAsync<bool>("isDarkMode");
             StateHasChanged();
-
-            await JSRuntime.InvokeVoidAsync("initTheme");
         }
     }
 

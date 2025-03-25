@@ -200,16 +200,16 @@
                                     <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
                                 </svg>
                             </button>
-                            
+
                             @for (int i = 1; i <= _shipments.TotalPages; i++)
                             {
-                                var page = i;
-                                <button @onclick="@(() => OnPageChanged(page))" 
-                                        class="@(page == _currentPage
-                                            ? "z-10 bg-primary-50 dark:bg-primary-900/30 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400"
-                                            : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700")
-                                                relative inline-flex items-center px-4 py-2 border text-sm font-medium">
-                                    @page
+                                var pageNumber = i;  // Renamed from "page" to "pageNumber"
+                                <button @onclick="@(() => OnPageChanged(pageNumber))"
+                                        class="@(pageNumber == _currentPage
+                                ? "z-10 bg-primary-50 dark:bg-primary-900/30 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400"
+                                : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700")
+                                relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                                   @pageNumber
                                 </button>
                             }
                             

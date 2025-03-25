@@ -16,6 +16,9 @@ namespace FastyBox.Infrastructure.Persistence.Configurations
             builder.HasOne(t => t.Settings)
                 .WithOne(s => s.Tenant)
                 .HasForeignKey<TenantSettings>(s => s.TenantId);
+
+            // Eliminamos esta configuración duplicada
+            // La relación ApplicationUser-Tenant se configura solo en ApplicationUserConfiguration
         }
     }
 }

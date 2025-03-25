@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 
-namespace FastyBox.Web.Components.Layout
+namespace FastyBox.Web.Shared
 {
     public class _LayoutModel : PageModel
     {

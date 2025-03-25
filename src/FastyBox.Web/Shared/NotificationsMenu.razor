@@ -1,4 +1,6 @@
-﻿@inject IStringLocalizer<SharedResource> L
+﻿@using FastyBox.Application.Common.Interfaces
+@using Microsoft.AspNetCore.SignalR.Client
+@inject IStringLocalizer<SharedResource> L
 @inject INotificationService NotificationService
 @inject IUserService UserService
 @inject NavigationManager NavigationManager

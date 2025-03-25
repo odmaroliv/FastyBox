@@ -1,8 +1,10 @@
 ﻿@page "/shipments"
+@using FastyBox.Application.Shipments.Queries.GetUserShipments
 @inject IStringLocalizer<SharedResource> L
 @inject IShipmentService ShipmentService
 @inject IUserService UserService
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <PageTitle>@L["Shipments"] - @L["AppName"]</PageTitle>
 
@@ -149,7 +151,7 @@
                                     @shipment.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                    <button @onclick="@((e) => { e.StopPropagation(); ViewShipment(shipment.Id); })" class="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300">
+                                    <button @onclick="@((e) => ViewShipmentWithoutPropagation(e, shipment.Id))" class="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300">
                                         @L["View"]
                                     </button>
                                 </td>
@@ -300,12 +302,10 @@
             }
 
             _shipments = await ShipmentService.GetUserShipmentsAsync(
-                _userId,
-                status,
-                type,
-                _searchText,
-                _currentPage,
-                _pageSize);
+      _userId,
+      _currentPage,
+      _pageSize);
+
         }
         finally
         {
@@ -379,7 +379,12 @@
 
         NavigationManager.NavigateTo(uriBuilder.Uri.ToString(), false);
     }
-
+    private async Task ViewShipmentWithoutPropagation(MouseEventArgs e, Guid id)
+    {
+        // Use JS interop to prevent event propagation
+        await JSRuntime.InvokeVoidAsync("preventDefaultAndStopPropagation", e);
+        ViewShipment(id);
+    }
     private void ViewShipment(Guid id)
     {
         NavigationManager.NavigateTo($"/shipments/{id}");

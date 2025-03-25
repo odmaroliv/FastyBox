@@ -1,4 +1,5 @@
 ﻿@namespace FastyBox.Web.Shared.Components
+@typeparam TValue
 
 <div class="flex items-start">
     <div class="flex items-center h-5">
@@ -7,7 +8,7 @@
                name="@Name"
                value="@Value"
                class="@GetRadioClass()"
-               checked="@(Value == SelectedValue)"
+               checked="@(EqualityComparer<TValue>.Default.Equals(Value, SelectedValue))"
                disabled="@Disabled"
                @onchange="OnRadioChange">
     </div>

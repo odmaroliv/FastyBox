@@ -1,0 +1,134 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="~/" />
+
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Configure Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            200: '#bae6fd',
+                            300: '#7dd3fc',
+                            400: '#38bdf8',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            800: '#075985',
+                            900: '#0c4a6e',
+                        }
+                    },
+                    boxShadow: {
+                        'soft': '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+                        'soft-lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
+                    }
+                }
+            }
+        }
+    </script>
+
+    <!-- Estilos CSS personalizados -->
+    <style>
+        .btn {
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-weight: 500;
+        }
+
+            .btn:focus {
+                outline: none;
+                box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.05), 0 0 0 4px rgba(59, 130, 246, 0.5);
+            }
+
+        .btn-primary {
+            background-color: #0284c7;
+            color: white;
+        }
+
+            .btn-primary:hover {
+                background-color: #0369a1;
+            }
+
+        .btn-ghost {
+            background-color: transparent;
+            color: #374151;
+        }
+
+            .btn-ghost:hover {
+                background-color: #f3f4f6;
+            }
+
+        .dark .btn-ghost {
+            color: #d1d5db;
+        }
+
+            .dark .btn-ghost:hover {
+                background-color: #374151;
+            }
+
+        .input {
+            padding: 0.5rem 0.75rem;
+            width: 100%;
+            border-radius: 0.375rem;
+            border-color: #d1d5db;
+        }
+
+            .input:focus {
+                border-color: #0ea5e9;
+                box-shadow: 0 0 0 2px rgba(14, 165, 233, 0.25);
+            }
+
+        .dark .input {
+            border-color: #4b5563;
+            background-color: #374151;
+            color: white;
+        }
+    </style>
+
+    <!-- CSS existente -->
+    <link href="css/site.css" rel="stylesheet" />
+
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+</head>
+<body>
+    @RenderBody()
+
+    <div id="blazor-error-ui">
+        <environment include="Staging,Production">
+            An error has occurred. This application may no longer respond until reloaded.
+        </environment>
+        <environment include="Development">
+            An unhandled exception has occurred. See browser dev tools for details.
+        </environment>
+        <a href="" class="reload">Reload</a>
+        <a class="dismiss">🗙</a>
+    </div>
+
+    <!-- JavaScript de Blazor -->
+    <script src="_framework/blazor.server.js"></script>
+
+    <!-- JavaScript personalizado -->
+    <script src="js/site.js"></script>
+
+    <!-- Inicialización del tema -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (typeof initTheme === 'function') {
+                initTheme();
+            }
+        });
+    </script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

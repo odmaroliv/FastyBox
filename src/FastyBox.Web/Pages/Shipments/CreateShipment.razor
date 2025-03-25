@@ -1,4 +1,5 @@
 ﻿@page "/shipments/new"
+@using FastyBox.Application.Shipments.Commands.CreateShipment
 @inject IStringLocalizer<SharedResource> L
 @inject IShipmentService ShipmentService
 @inject IUserService UserService
@@ -88,7 +89,7 @@
                                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                         <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
                                     </div>
-                                    <input type="text" id="declared-value" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind="_model.DeclaredValue" @oninput="OnDeclaredValueChange" @onblur="OnDeclaredValueBlur">
+                                    <input type="text" id="declared-value" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind-value="_model.DeclaredValue" @bind-value:event="oninput" @onblur="OnDeclaredValueBlur">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                         <span class="text-gray-500 dark:text-gray-400 sm:text-sm">USD</span>
                                     </div>
@@ -102,7 +103,7 @@
                             <div>
                                 <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Weight"]</label>
                                 <div class="mt-1 relative rounded-md shadow-sm">
-                                    <input type="text" id="weight" class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind="_model.Weight" @oninput="OnWeightChange" @onblur="OnWeightBlur">
+                                    <input type="text" id="weight" class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind-value="_model.Weight" @bind-value:event="oninput" @onblur="OnWeightBlur">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
                                         <span class="text-gray-500 dark:text-gray-400 sm:text-sm">kg</span>
                                     </div>
@@ -115,9 +116,9 @@
                         </div>
 
                         <div>
-                            <label for="customer-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["CustomerNotes"]</label>
+                            <label for="customer-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Notes"]</label>
                             <div class="mt-1">
-                                <textarea id="customer-notes" rows="3" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="_model.CustomerNotes"></textarea>
+                                <textarea id="customer-notes" rows="3" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="_notes"></textarea>
                             </div>
                             <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">@L["Additional instructions or information for this shipment"]</p>
                         </div>
@@ -155,22 +156,55 @@
 
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Quantity"]</label>
-                                                    <div class="mt-1">
-                                                        <input type="number" min="1" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Quantity" @onchange="@(() => UpdateItemTotalPrice(item))">
-                                                        @if (item.Quantity <= 0 && _itemsValidated)
+                                                    @* For the DeclaredValue input - Replace lines around line 159 *@
+                                                    <div class="form-group">
+                                                        <label for="declaredValue">@L["DeclaredValue"]</label>
+                                                        <div class="input-group">
+                                                            <div class="input-group-prepend">
+                                                                <span class="input-group-text">$</span>
+                                                            </div>
+                                                            <input type="number" id="declaredValue" class="form-control"
+                                                                   value="@_model.DeclaredValue"
+                                                                   @onchange="(e) => { OnDeclaredValueChange(e); OnDeclaredValueBlur(); }" />
+                                                            <div class="input-group-append">
+                                                                <span class="input-group-text">USD</span>
+                                                            </div>
+                                                        </div>
+                                                        @if (_model.DeclaredValue <= 0 && _declaredValueTouched)
                                                         {
-                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                                            <div class="invalid-feedback d-block">@L["ErrorFieldRequired"]</div>
+                                                        }
+                                                    </div>
+
+                                                    @* For the Weight input - Replace lines around line 173 *@
+                                                    <div class="form-group">
+                                                        <label for="weight">@L["Weight"]</label>
+                                                        <div class="input-group">
+                                                            <input type="number" id="weight" class="form-control" step="0.01"
+                                                                   value="@_model.Weight"
+                                                                   @onchange="(e) => { OnWeightChange(e); OnWeightBlur(); }" />
+                                                            <div class="input-group-append">
+                                                                <span class="input-group-text">kg</span>
+                                                            </div>
+                                                        </div>
+                                                        @if (_model.Weight <= 0 && _weightTouched)
+                                                        {
+                                                            <div class="invalid-feedback d-block">@L["ErrorFieldRequired"]</div>
                                                         }
                                                     </div>
                                                 </div>
 
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["UnitPrice"]</label>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["UnitPrice"]</label>
                                                     <div class="mt-1 relative rounded-md shadow-sm">
                                                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                                             <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
                                                         </div>
-                                                        <input type="text" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.UnitPrice" @onchange="@(() => UpdateItemTotalPrice(item))">
+                                                        <input type="text"
+                                                               class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                               value="@item.UnitPrice"
+                                                               @oninput="(e) => { UpdateUnitPrice(e, item); UpdateItemTotalPrice(item); }">
                                                         @if (item.UnitPrice <= 0 && _itemsValidated)
                                                         {
                                                             <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
@@ -252,11 +286,11 @@
                                     <p class="mt-1 text-sm text-gray-900 dark:text-white">@_model.Description</p>
                                 </div>
                                 
-                                @if (!string.IsNullOrEmpty(_model.CustomerNotes))
+                                @if (!string.IsNullOrEmpty(_notes))
                                 {
                                     <div class="sm:col-span-2">
-                                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["CustomerNotes"]</h4>
-                                        <p class="mt-1 text-sm text-gray-900 dark:text-white">@_model.CustomerNotes</p>
+                                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Notes"]</h4>
+                                        <p class="mt-1 text-sm text-gray-900 dark:text-white">@_notes</p>
                                     </div>
                                 }
                             </div>
@@ -381,6 +415,7 @@
     private bool _isSubmitting = false;
     private string _userId;
     private Guid? _tenantId;
+    private string _notes; // Use this instead of CustomerNotes
     
     // Form validation
     private bool _descriptionTouched = false;
@@ -407,6 +442,13 @@
         
         // Add an initial empty item
         AddItem();
+    }
+    private void UpdateUnitPrice(ChangeEventArgs e, ShipmentItemDto item)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal value))
+        {
+            item.UnitPrice = value;
+        }
     }
     
     private void AddItem()
@@ -437,6 +479,7 @@
     private void UpdateItemTotalPrice(ShipmentItemDto item)
     {
         // TotalPrice will be calculated automatically
+        StateHasChanged();
     }
     
     private void OnDeclaredValueChange(ChangeEventArgs e)
@@ -540,6 +583,9 @@
             {
                 _model.DeclaredValue = _model.Items.Sum(i => i.UnitPrice * i.Quantity);
             }
+            
+            // Add notes as a shipment note if we need to
+            // The implementation would depend on how notes are handled in your service
             
             var shipmentId = await ShipmentService.CreateShipmentAsync(_model);
             await JSRuntime.InvokeVoidAsync("showToast", L["Shipment created successfully"], "success");

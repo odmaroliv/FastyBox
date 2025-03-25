@@ -1,9 +1,12 @@
-﻿@inject IStringLocalizer<SharedResource> L
-@inject IShipmentService ShipmentService
+﻿@using FastyBox.Application.Common.Interfaces
+@using FastyBox.Application.Shipments.Queries.GetUserShipments
+@inject IStringLocalizer<SharedResource> L
+@inject FastyBox.Web.Services.IShipmentService ShipmentService
 @inject IUserService UserService
 @inject INotificationService NotificationService
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject ITenantService tenantService
 
 <div class="space-y-6">
     <!-- Welcome Card -->
