@@ -4,88 +4,118 @@
 @inject IStringLocalizer<SharedResource> L
 @inject ITenantService TenantService
 @inject IUserService UserService
-@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
 <PageTitle>@L["TenantSettings"] - @L["Admin"] - @L["AppName"]</PageTitle>
 
-    <MudContainer MaxWidth="MaxWidth.Large">
-        <MudGrid>
-            <MudItem xs="12">
-                <MudText Typo="Typo.h4" Class="mb-4">@L["TenantSettings"]</MudText>
-            </MudItem>
+    <div class="container mx-auto px-4 py-8 max-w-3xl">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">@L["TenantSettings"]</h1>
 
-            <MudItem xs="12">
-                <MudPaper Class="pa-4">
-                    @if (_isLoading)
+    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+        @if (_isLoading)
+        {
+            <div class="flex justify-center items-center p-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+            </div>
+        }
+        else if (_settings != null)
+        {
+            <form @onsubmit="SaveSettings" class="p-6 space-y-6">
+                <div>
+                    <label for="profit-margin" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["ProfitMargin"]</label>
+                    <div class="mt-1 relative rounded-md shadow-sm">
+                        <input type="number" step="0.01" min="0" max="100" id="profit-margin" required
+                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                               @bind="_settings.ProfitMarginPercentage">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">%</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="us-address" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["UsAddress"]</label>
+                    <div class="mt-1">
+                        <textarea id="us-address" rows="3" required
+                                  class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                  @bind="_settings.UsAddress"></textarea>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="stripe-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["StripeApiKey"]</label>
+                    <div class="mt-1">
+                        <input type="text" id="stripe-api-key"
+                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                               @bind="_settings.StripeApiKey">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="stripe-webhook-secret" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["StripeWebhookSecret"]</label>
+                    <div class="mt-1">
+                        <input type="text" id="stripe-webhook-secret"
+                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                               @bind="_settings.StripeWebhookSecret">
+                    </div>
+                </div>
+
+                <div class="flex items-center">
+                    <input id="enable-ai" name="enable-ai" type="checkbox"
+                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded"
+                           @bind="_settings.EnableAiIntegration">
+                    <label for="enable-ai" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                        @L["EnableAiIntegration"]
+                    </label>
+                </div>
+
+                @if (_settings.EnableAiIntegration)
                 {
-                    <div class="d-flex justify-center">
-                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    <div>
+                        <label for="openai-api-key" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["OpenAiApiKey"]</label>
+                        <div class="mt-1">
+                            <input type="text" id="openai-api-key"
+                                   class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                   @bind="_settings.OpenAiApiKey">
+                        </div>
                     </div>
                 }
-                else if (_settings != null)
-                {
-                    <MudForm @ref="_form" @bind-IsValid="@_isValid" Model="@_settings">
-                        <MudGrid>
-                            <MudItem xs="12" md="6">
-                                <MudNumericField T="decimal" Label="@L["ProfitMargin"]" @bind-Value="_settings.ProfitMarginPercentage" Required="true"
-                                                 RequiredError="@L["ErrorFieldRequired"]" Min="0" Max="100" Format="N2"
-                                                 Adornment="Adornment.End" AdornmentText="%" AdornmentColor="Color.Secondary" />
-                            </MudItem>
 
-                            <MudItem xs="12">
-                                <MudTextField T="string" Label="@L["UsAddress"]" @bind-Value="_settings.UsAddress" Required="true"
-                                              RequiredError="@L["ErrorFieldRequired"]" Lines="3" />
-                            </MudItem>
-
-                            <MudItem xs="12">
-                                <MudTextField T="string" Label="@L["StripeApiKey"]" @bind-Value="_settings.StripeApiKey" />
-                            </MudItem>
-
-                            <MudItem xs="12">
-                                <MudTextField T="string" Label="@L["StripeWebhookSecret"]" @bind-Value="_settings.StripeWebhookSecret" />
-                            </MudItem>
-
-                            <MudItem xs="12">
-                                <MudCheckBox T="bool" @bind-Value="_settings.EnableAiIntegration" Label="@L["EnableAiIntegration"]" Color="Color.Primary" />
-                            </MudItem>
-
-
-                            @if (_settings.EnableAiIntegration)
-                            {
-                                <MudItem xs="12">
-                                    <MudTextField T="string" Label="@L["OpenAiApiKey"]" @bind-Value="_settings.OpenAiApiKey" />
-                                </MudItem>
-                            }
-
-                            <MudItem xs="12" Class="d-flex justify-end mt-4">
-                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings"
-                                           Disabled="@(!_isValid || _isSaving)">
-                                    @if (_isSaving)
-                                    {
-                                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                                        <MudText Class="ms-2">@L["Saving"]</MudText>
-                                    }
-                                    else
-                                    {
-                                        @L["Save"]
-                                    }
-                                </MudButton>
-                            </MudItem>
-                        </MudGrid>
-                    </MudForm>
-                }
-                else
-                {
-                    <MudAlert Severity="Severity.Error">@L["Unable to load tenant settings."]</MudAlert>
-                }
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+                <div class="flex justify-end">
+                    <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                            disabled="@_isSaving">
+                        @if (_isSaving)
+                        {
+                            <div class="inline-flex items-center">
+                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                @L["Saving"]
+                            </div>
+                        }
+                        else
+                        {
+                            @L["Save"]
+                        }
+                    </button>
+                </div>
+            </form>
+        }
+        else
+        {
+            <div class="p-6 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["Unable to load tenant settings."]</h3>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
-    private MudForm _form;
-    private bool _isValid;
     private bool _isLoading = true;
     private bool _isSaving;
     private TenantSettings _settings;
@@ -110,17 +140,18 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error loading tenant settings: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error loading tenant settings: "] + ex.Message, "error");
         }
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
     private async Task SaveSettings()
     {
-        if (!_isValid || _settings == null)
+        if (_settings == null)
         {
             return;
         }
@@ -130,11 +161,11 @@
         try
         {
             await TenantService.UpdateTenantSettingsAsync(_settings);
-            Snackbar.Add(L["Settings saved successfully"], Severity.Success);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Settings saved successfully"], "success");
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error saving settings: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error saving settings: "] + ex.Message, "error");
         }
         finally
         {

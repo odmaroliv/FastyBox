@@ -8,359 +8,669 @@
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Localization
 @using Microsoft.JSInterop
-@using MudBlazor
-@using SendGrid.Helpers.Mail
 @inject IStringLocalizer<SharedResource> L
 @inject FastyBox.Web.Services.IShipmentService ShipmentService
 @inject IUserService UserService
 @inject IStripeService StripeService
 @inject NavigationManager NavigationManager
-@inject ISnackbar Snackbar
 @inject IJSRuntime JSRuntime
 
 <PageTitle>@L["ShipmentDetails"] - @L["AppName"]</PageTitle>
 
-@if (_isLoading)
-{
-    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-}
-else if (_shipment != null)
-{
-    <MudContainer MaxWidth="MaxWidth.ExtraLarge">
-        <MudGrid>
-            <MudItem xs="12" Class="d-flex justify-space-between align-center">
-                <MudText Typo="Typo.h4">@L["ShipmentDetails"] - @_shipment.TrackingNumber</MudText>
-                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/shipments"))">
-                    @L["Back to List"]
-                </MudButton>
-            </MudItem>
-            
-            <MudItem xs="12" md="8">
-                <MudPaper Class="pa-4 mb-4">
-                    <MudGrid>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["Status"]</MudText>
-                            <ShipmentStatusBadge Status="@_shipment.Status" />
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["Type"]</MudText>
-                            <MudText>@(_shipment.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])</MudText>
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["CreatedAt"]</MudText>
-                            <MudText>@_shipment.CreatedAt.ToLocalTime().ToString("g")</MudText>
-                        </MudItem>
-                        
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["DeclaredValue"]</MudText>
-                            <MudText>$@_shipment.DeclaredValue.ToString("N2")</MudText>
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["Weight"]</MudText>
-                            <MudText>@_shipment.Weight kg</MudText>
-                        </MudItem>
-                        <MudItem xs="12" md="4">
-                            <MudText Typo="Typo.subtitle2">@L["CourierTrackingNumber"]</MudText>
-                            <MudText>@(_shipment.CourierTrackingNumber ?? "-")</MudText>
-                        </MudItem>
-                        
-                        <MudItem xs="12">
-                            <MudText Typo="Typo.subtitle2">@L["Description"]</MudText>
-                            <MudText>@_shipment.Description</MudText>
-                        </MudItem>
-                    </MudGrid>
-                </MudPaper>
-                
-                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
-                    <MudTabPanel Text="@L["Items"]" Icon="@Icons.Material.Filled.Inventory">
-                        @if (_shipment.Items.Count > 0)
-                        {
-                           <MudTable Items="@_shipment.Items" Hover="true" Breakpoint="Breakpoint.Sm">
-                                <HeaderContent>
-                                    <MudTh>@L["Name"]</MudTh>
-                                    <MudTh>@L["Quantity"]</MudTh>
-                                    <MudTh>@L["UnitPrice"]</MudTh>
-                                    <MudTh>@L["TotalPrice"]</MudTh>
-                                    <MudTh>@L["Weight"]</MudTh>
-                                </HeaderContent>
-                                                                <RowTemplate>
-                                        <MudTr>
-                                            <MudTd DataLabel="@L["Name"]">
-                                                <div>
-                                                    <div>@context.Name</div>
-                                                @if (!string.IsNullOrEmpty(context.Url))
-                                                {
-                                                    <MudLink Href="@context.Url" Target="_blank" Typo="Typo.caption">@L["View"]</MudLink>
-                                                }
-                                            </div>
-                                        </MudTd>
-                                        <MudTd DataLabel="@L["Quantity"]">@context.Quantity</MudTd>
-                                            <MudTd DataLabel="@L["UnitPrice"]">$@context.UnitPrice.ToString("N2")</MudTd>
-                                            <MudTd DataLabel="@L["TotalPrice"]">$@context.TotalPrice.ToString("N2")</MudTd>
-                                            <MudTd DataLabel="@L["Weight"]">@($"{context.Weight} kg")</MudTd>
-                                        </MudTr>
-                                    </RowTemplate>
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+        @if (_isLoading)
+    {
+        <div class="flex justify-center items-center py-12">
+            <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+        </div>
+    }
+    else if (_shipment != null)
+    {
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@L["ShipmentDetails"] - @_shipment.TrackingNumber</h1>
+            <button type="button" @onclick="@(() => NavigationManager.NavigateTo("/shipments"))"
+                    class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                @L["Back to List"]
+            </button>
+        </div>
 
-                                    </MudTable>
-                        }
-                        else
-                        {
-                            <MudAlert Severity="Severity.Info">@L["No items found."]</MudAlert>
-                        }
-                    </MudTabPanel>
-                    
-                    <MudTabPanel Text="@L["Documents"]" Icon="@Icons.Material.Filled.Description">
-                        <div class="mb-4">
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Upload"
-                                      OnClick="OpenUploadDialog">
-                                @L["UploadDocument"]
-                            </MudButton>
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+            <!-- Main Content -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Basic Shipment Info -->
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Status"]</h3>
+                                <div class="mt-1">
+                                    <ShipmentStatusBadge Status="@_shipment.Status" />
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Type"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @(_shipment.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])
+                                </p>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["CreatedAt"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @_shipment.CreatedAt.ToLocalTime().ToString("g")
+                                </p>
+                            </div>
+
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["DeclaredValue"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    $@_shipment.DeclaredValue.ToString("N2")
+                                </p>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Weight"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @_shipment.Weight kg
+                                </p>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["CourierTrackingNumber"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @(_shipment.CourierTrackingNumber ?? "-")
+                                </p>
+                            </div>
+
+                            <div class="sm:col-span-3">
+                                <h3 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Description"]</h3>
+                                <p class="mt-1 text-sm text-gray-900 dark:text-white">
+                                    @_shipment.Description
+                                </p>
+                            </div>
                         </div>
-                        
-                        @if (_shipment.Documents.Count > 0)
-                        {
-                           <MudTable Items="@_shipment.Documents" Hover="true" Breakpoint="Breakpoint.Sm">
-                                <HeaderContent>
-                                    <MudTh>@L["Type"]</MudTh>
-                                    <MudTh>@L["FileName"]</MudTh>
-                                    <MudTh>@L["UploadedAt"]</MudTh>
-                                    <MudTh></MudTh>
-                                </HeaderContent>
-                                    <RowTemplate>
-                                        <MudTr>
-                                            <MudTd DataLabel="@L["Type"]">@GetDocumentTypeName(@context.Type)</MudTd>
-                                            <MudTd DataLabel="@L["FileName"]">@context.FileName</MudTd>
-                                            <MudTd DataLabel="@L["UploadedAt"]">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
-                                            <MudTd>
-                                                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
-                                                           Href="@context.PublicUrl" Target="_blank">
-                                                    @L["View"]
-                                            </MudButton>
-                                        </MudTd>
-                                    </MudTr>
-                                </RowTemplate>
+                    </div>
+                </div>
 
-                                    </MudTable>
-                        }
-                        else
-                        {
-                            <MudAlert Severity="Severity.Info">@L["No documents found. Please upload the required documents."]</MudAlert>
-                        }
-                    </MudTabPanel>
-                    
-                    <MudTabPanel Text="@L["History"]" Icon="@Icons.Material.Filled.History">
-                        @if (_shipment.StatusHistory.Count > 0)
-                        {
-                            <MudTimeline>
-                                @foreach (var history in _shipment.StatusHistory.OrderByDescending(h => h.CreatedAt))
-                                {
-                                    <MudTimelineItem Color="@GetTimelineColor(history.NewStatus)" Elevation="0">
-                                        <ItemOpposite>
-                                            <MudText Typo="Typo.body2">@history.CreatedAt.ToLocalTime().ToString("g")</MudText>
-                                        </ItemOpposite>
-                                        <ItemContent>
-                                            <MudText Typo="Typo.h6">@GetStatusText(history.NewStatus)</MudText>
-                                            @if (!string.IsNullOrEmpty(history.Notes))
-                                            {
-                                                <MudText Typo="Typo.body2">@history.Notes</MudText>
-                                            }
-                                        </ItemContent>
-                                    </MudTimelineItem>
-                                }
-                            </MudTimeline>
-                        }
-                        else
-                        {
-                            <MudAlert Severity="Severity.Info">@L["No history found."]</MudAlert>
-                        }
-                    </MudTabPanel>
-                    
-                    <MudTabPanel Text="@L["Notes"]" Icon="@Icons.Material.Filled.Notes">
-                        <div class="mb-4">
-                            <MudTextField @bind-Value="_newNote" Label="@L["Add a note"]" Lines="3" />
-                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-2"
-                                      OnClick="AddNote" Disabled="@string.IsNullOrWhiteSpace(_newNote)">
-                                @L["AddNote"]
-                            </MudButton>
-                        </div>
-                        
-                        @if (_shipment.Notes.Count > 0)
-                        {
-                            <MudList T="object">
-                                @foreach (var note in _shipment.Notes.OrderByDescending(n => n.CreatedAt))
-                                {
-                                    <MudListItem>
-                                        <div class="d-flex flex-column">
-                                            <MudText>@note.Note</MudText>
-                                            <div class="d-flex align-center">
-                                                <MudText Typo="Typo.caption">
-                                                    @(note.IsSystemGenerated ? L["System"] : note.User?.FullName)
-                                                </MudText>
-                                                <MudText Typo="Typo.caption" Class="ml-2">
-                                                    @note.CreatedAt.ToLocalTime().ToString("g")
-                                                </MudText>
-                                            </div>
-                                        </div>
-                                    </MudListItem>
-                                    <MudDivider />
-                                }
-                            </MudList>
-                        }
-                        else
-                        {
-                            <MudAlert Severity="Severity.Info">@L["No notes found."]</MudAlert>
-                        }
-                    </MudTabPanel>
-                </MudTabs>
-            </MudItem>
-            
-            <MudItem xs="12" md="4">
-                <MudPaper Class="pa-4 mb-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">@L["Payment"]</MudText>
-                    
-                    @if (_shipment.IsPaid)
-                    {
-                        <MudAlert Severity="Severity.Success" Class="mb-4">@L["This shipment has been paid."]</MudAlert>
-                    }
-                    else if (_shipment.Status == ShipmentStatus.AwaitingPayment)
-                    {
-                        <MudAlert Severity="Severity.Warning" Class="mb-4">@L["Payment required to proceed."]</MudAlert>
-                    }
+                <!-- Tabs Section -->
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                    <!-- Tab Navigation -->
+                    <div class="border-b border-gray-200 dark:border-gray-700">
+                        <nav class="-mb-px flex space-x-8">
+                            <button @onclick="@(() => _activeTab = 0)"
+                                    class="@(_activeTab == 0 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                </svg>
+                                @L["Items"]
+                            </button>
+                            <button @onclick="@(() => _activeTab = 1)"
+                                    class="@(_activeTab == 1 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                @L["Documents"]
+                            </button>
+                            <button @onclick="@(() => _activeTab = 2)"
+                                    class="@(_activeTab == 2 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                @L["History"]
+                            </button>
+                            <button @onclick="@(() => _activeTab = 3)"
+                                    class="@(_activeTab == 3 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4 inline-block" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                </svg>
+                                @L["Notes"]
+                            </button>
+                        </nav>
+                    </div>
 
-                    <MudList T="object" Clickable="false">
-                        <MudListItem>
-                            <div class="d-flex justify-space-between w-100">
-                                <MudText>@L["ShippingCost"]</MudText>
-                                <MudText>$@_shipment.ShippingCost.ToString("N2")</MudText>
-                            </div>
-                        </MudListItem>
-                        <MudListItem>
-                            <div class="d-flex justify-space-between w-100">
-                                <MudText>@L["ServiceFee"]</MudText>
-                                <MudText>$@_shipment.ServiceFee.ToString("N2")</MudText>
-                            </div>
-                        </MudListItem>
-                        <MudDivider />
-                        <MudListItem>
-                            <div class="d-flex justify-space-between w-100">
-                                <MudText Typo="Typo.h6">@L["TotalCost"]</MudText>
-                                <MudText Typo="Typo.h6">$@_shipment.TotalCost.ToString("N2")</MudText>
-                            </div>
-                        </MudListItem>
-                    </MudList>
-                    
-                    @if (!_shipment.IsPaid && _shipment.Status == ShipmentStatus.AwaitingPayment && _shipment.TotalCost > 0)
-                    {
-                        <MudButton Variant="Variant.Filled" Color="Color.Success" FullWidth="true" Class="mt-4"
-                                  OnClick="InitiatePayment" Disabled="_isProcessingPayment">
-                            @if (_isProcessingPayment)
+                    <!-- Tab Content -->
+                    <div class="p-6">
+                        @if (_activeTab == 0)
+                        {
+                            <!-- Items Tab -->
+                            @if (_shipment.Items.Count > 0)
                             {
-                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                                <MudText Class="ms-2">@L["Processing"]</MudText>
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["Name"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["Quantity"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["UnitPrice"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["TotalPrice"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["Weight"]
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            @foreach (var item in _shipment.Items)
+                                            {
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                        <div>
+                                                            <div>@item.Name</div>
+                                                            @if (!string.IsNullOrEmpty(item.Url))
+                                                            {
+                                                                <a href="@item.Url" target="_blank" class="text-primary-600 dark:text-primary-400 hover:text-primary-500 text-xs">@L["View"]</a>
+                                                            }
+                                                        </div>
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        @item.Quantity
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        $@item.UnitPrice.ToString("N2")
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        $@item.TotalPrice.ToString("N2")
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        @item.Weight kg
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
                             }
                             else
                             {
-                                @L["PayNow"]
+                                <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-blue-400 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                                @L["No items found."]
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
                             }
-                        </MudButton>
-                    }
-                </MudPaper>
-                
-                <MudPaper Class="pa-4">
-                    <MudText Typo="Typo.h6" Class="mb-4">@L["Actions"]</MudText>
-                    
-                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Class="mb-2"
-                              StartIcon="@Icons.Material.Filled.ContentCopy"
-                              OnClick="CopyTrackingNumber">
-                        @L["Copy Tracking Number"]
-                    </MudButton>
-                    
-                    @if (_shipment.Status == ShipmentStatus.Draft)
-                    {
-                        <MudButton Variant="Variant.Outlined" Color="Color.Success" FullWidth="true" Class="mb-2"
-                                  StartIcon="@Icons.Material.Filled.Send"
-                                  OnClick="@(() => UpdateStatus(ShipmentStatus.Submitted))">
-                            @L["Submit Shipment"]
-                        </MudButton>
-                    }
-                    
-                    @if (_shipment.Status is ShipmentStatus.Draft or ShipmentStatus.Submitted)
-                    {
-                        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Class="mb-2"
-                                  StartIcon="@Icons.Material.Filled.Cancel"
-                                  OnClick="@(() => UpdateStatus(ShipmentStatus.Cancelled))">
-                            @L["Cancel Shipment"]
-                        </MudButton>
-                    }
-                </MudPaper>
-            </MudItem>
-        </MudGrid>
-    </MudContainer>
-    
-    <MudDialog @bind-IsVisible="_isUploadDialogVisible" Options="new DialogOptions { CloseOnEscapeKey = true }">
-        <TitleContent>
-            <MudText Typo="Typo.h6">@L["UploadDocument"]</MudText>
-        </TitleContent>
-        <DialogContent>
-            <MudForm @ref="_uploadForm" @bind-IsValid="@_isUploadFormValid">
-                <MudSelect T="DocumentType" Label="@L["DocumentType"]" @bind-Value="_documentType" Required="true"
-                          RequiredError="@L["ErrorFieldRequired"]">
-                    <MudSelectItem Value="@DocumentType.Invoice">@L["Invoice"]</MudSelectItem>
-                    <MudSelectItem Value="@DocumentType.PaymentProof">@L["PaymentProof"]</MudSelectItem>
-                    <MudSelectItem Value="@DocumentType.ProductImage">@L["ProductImage"]</MudSelectItem>
-                    <MudSelectItem Value="@DocumentType.CustomsDeclaration">@L["CustomsDeclaration"]</MudSelectItem>
-                    <MudSelectItem Value="@DocumentType.OtherDocumentation">@L["OtherDocumentation"]</MudSelectItem>
-                </MudSelect>
-                
-                <MudTextField T="string" Label="@L["Notes"]" @bind-Value="_documentNotes" Lines="3" />
-                
-                <InputFile id="fileInput" OnChange="OnInputFileChange" hidden accept=".pdf,.jpg,.jpeg,.png" />
-                
-                <div class="d-flex align-center justify-space-between mt-4">
-                    <div>
-                        @if (_selectedFile != null)
+                        }
+                        else if (_activeTab == 1)
                         {
-                            <MudText Typo="Typo.body2">@_selectedFile.FileName</MudText>
-                            <MudText Typo="Typo.caption">@(_selectedFile.Size / 1024) KB</MudText>
+                            <!-- Documents Tab -->
+                            <div class="mb-4">
+                                <button type="button" @onclick="OpenUploadDialog"
+                                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                    <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                    </svg>
+                                    @L["UploadDocument"]
+                                </button>
+                            </div>
+
+                            @if (_shipment.Documents.Count > 0)
+                            {
+                                <div class="overflow-x-auto">
+                                    <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                        <thead class="bg-gray-50 dark:bg-gray-700">
+                                            <tr>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["Type"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["FileName"]
+                                                </th>
+                                                <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    @L["UploadedAt"]
+                                                </th>
+                                                <th scope="col" class="relative px-6 py-3">
+                                                    <span class="sr-only">@L["Actions"]</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                            @foreach (var document in _shipment.Documents)
+                                            {
+                                                <tr>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        @GetDocumentTypeName(document.Type)
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        @document.FileName
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                        @document.CreatedAt.ToLocalTime().ToString("g")
+                                                    </td>
+                                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                        <a href="@document.PublicUrl" target="_blank" class="text-primary-600 dark:text-primary-400 hover:text-primary-500 mr-3">
+                                                            @L["View"]
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-blue-400 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                                @L["No documents found. Please upload the required documents."]
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else if (_activeTab == 2)
+                        {
+                            <!-- History Tab -->
+                            @if (_shipment.StatusHistory.Count > 0)
+                            {
+                                <div class="flow-root">
+                                    <ul role="list" class="-mb-8">
+                                        @foreach (var history in _shipment.StatusHistory.OrderByDescending(h => h.CreatedAt))
+                                        {
+                                            <li>
+                                                <div class="relative pb-8">
+                                                    @if (history != _shipment.StatusHistory.OrderByDescending(h => h.CreatedAt).Last())
+                                                    {
+                                                        <span class="absolute top-5 left-5 -ml-px h-full w-0.5 bg-gray-200 dark:bg-gray-700" aria-hidden="true"></span>
+                                                    }
+                                                    <div class="relative flex items-start space-x-3">
+                                                        <div class="relative">
+                                                            <div class="h-10 w-10 rounded-full @GetStatusBgColor(history.NewStatus) flex items-center justify-center ring-8 ring-white dark:ring-gray-800">
+                                                                <svg class="h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                                </svg>
+                                                            </div>
+                                                        </div>
+                                                        <div class="min-w-0 flex-1">
+                                                            <div>
+                                                                <div class="text-sm">
+                                                                    <span class="font-medium text-gray-900 dark:text-white">@GetStatusText(history.NewStatus)</span>
+                                                                </div>
+                                                                <p class="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
+                                                                    @history.CreatedAt.ToLocalTime().ToString("g")
+                                                                </p>
+                                                            </div>
+                                                            @if (!string.IsNullOrEmpty(history.Notes))
+                                                            {
+                                                                <div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+                                                                    <p>@history.Notes</p>
+                                                                </div>
+                                                            }
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-blue-400 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                                @L["No history found."]
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                        else if (_activeTab == 3)
+                        {
+                            <!-- Notes Tab -->
+                            <div class="mb-6">
+                                <label for="new-note" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Add a note"]</label>
+                                <div class="mt-1">
+                                    <textarea id="new-note" rows="3"
+                                              class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                              @bind="_newNote"></textarea>
+                                </div>
+                                <div class="mt-2">
+                                    <button type="button" @onclick="AddNote"
+                                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+                                            disabled="@string.IsNullOrWhiteSpace(_newNote)">
+                                        @L["AddNote"]
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if (_shipment.Notes.Count > 0)
+                            {
+                                <div class="flow-root">
+                                    <ul role="list" class="-my-5 divide-y divide-gray-200 dark:divide-gray-700">
+                                        @foreach (var note in _shipment.Notes.OrderByDescending(n => n.CreatedAt))
+                                        {
+                                            <li class="py-4">
+                                                <div class="flex space-x-3">
+                                                    <div class="flex-1 space-y-1">
+                                                        <div class="flex items-center justify-between">
+                                                            <h3 class="text-sm font-medium text-gray-900 dark:text-white">
+                                                                @(note.IsSystemGenerated ? L["System"] : note.User?.FullName)
+                                                            </h3>
+                                                            <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                                @note.CreatedAt.ToLocalTime().ToString("g")
+                                                            </p>
+                                                        </div>
+                                                        <p class="text-sm text-gray-500 dark:text-gray-400">
+                                                            @note.Note
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </li>
+                                        }
+                                    </ul>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="rounded-md bg-blue-50 dark:bg-blue-900/20 p-4">
+                                    <div class="flex">
+                                        <div class="flex-shrink-0">
+                                            <svg class="h-5 w-5 text-blue-400 dark:text-blue-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <div class="ml-3">
+                                            <p class="text-sm text-blue-700 dark:text-blue-300">
+                                                @L["No notes found."]
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar -->
+            <div class="space-y-6">
+                <!-- Payment Card -->
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">@L["Payment"]</h2>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6">
+                        @if (_shipment.IsPaid)
+                        {
+                            <div class="rounded-md bg-green-50 dark:bg-green-900/20 p-4 mb-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-green-400 dark:text-green-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-green-700 dark:text-green-300">
+                                            @L["This shipment has been paid."]
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                        else if (_shipment.Status == ShipmentStatus.AwaitingPayment)
+                        {
+                            <div class="rounded-md bg-yellow-50 dark:bg-yellow-900/20 p-4 mb-4">
+                                <div class="flex">
+                                    <div class="flex-shrink-0">
+                                        <svg class="h-5 w-5 text-yellow-400 dark:text-yellow-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-3">
+                                        <p class="text-sm text-yellow-700 dark:text-yellow-300">
+                                            @L["Payment required to proceed."]
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        }
+
+                        <div class="flow-root">
+                            <dl class="-my-4 divide-y divide-gray-200 dark:divide-gray-700">
+                                <div class="py-4 flex justify-between">
+                                    <dt class="text-sm text-gray-600 dark:text-gray-400">@L["ShippingCost"]</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">$@_shipment.ShippingCost.ToString("N2")</dd>
+                                </div>
+                                <div class="py-4 flex justify-between">
+                                    <dt class="text-sm text-gray-600 dark:text-gray-400">@L["ServiceFee"]</dt>
+                                    <dd class="text-sm font-medium text-gray-900 dark:text-white">$@_shipment.ServiceFee.ToString("N2")</dd>
+                                </div>
+                                <div class="py-4 flex justify-between">
+                                    <dt class="text-base font-medium text-gray-900 dark:text-white">@L["TotalCost"]</dt>
+                                    <dd class="text-base font-medium text-gray-900 dark:text-white">$@_shipment.TotalCost.ToString("N2")</dd>
+                                </div>
+                            </dl>
+                        </div>
+
+                        @if (!_shipment.IsPaid && _shipment.Status == ShipmentStatus.AwaitingPayment && _shipment.TotalCost > 0)
+                        {
+                            <div class="mt-6">
+                                <button type="button" @onclick="InitiatePayment"
+                                        class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+                                        disabled="@_isProcessingPayment">
+                                    @if (_isProcessingPayment)
+                                    {
+                                        <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        @L["Processing"]
+                                    }
+                                    else
+                                    {
+                                        @L["PayNow"]
+                                    }
+                                </button>
+                            </div>
+                        }
+                    </div>
+                </div>
+
+                <!-- Actions Card -->
+                <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                        <h2 class="text-lg font-medium text-gray-900 dark:text-white">@L["Actions"]</h2>
+                    </div>
+                    <div class="px-4 py-5 sm:p-6 space-y-3">
+                        <button type="button" @onclick="CopyTrackingNumber"
+                                class="w-full inline-flex justify-center items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            @L["Copy Tracking Number"]
+                        </button>
+
+                        @if (_shipment.Status == ShipmentStatus.Draft)
+                        {
+                            <button type="button" @onclick="@(() => UpdateStatus(ShipmentStatus.Submitted))"
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                </svg>
+                                @L["Submit Shipment"]
+                            </button>
+                        }
+
+                        @if (_shipment.Status is ShipmentStatus.Draft or ShipmentStatus.Submitted)
+                        {
+                            <button type="button" @onclick="@(() => UpdateStatus(ShipmentStatus.Cancelled))"
+                                    class="w-full inline-flex justify-center items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                @L["Cancel Shipment"]
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="rounded-md bg-red-50 dark:bg-red-900/20 p-4">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <svg class="h-5 w-5 text-red-400 dark:text-red-300" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                    </svg>
+                </div>
+                <div class="ml-3">
+                    <h3 class="text-sm font-medium text-red-800 dark:text-red-300">@L["Shipment not found."]</h3>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@if (_isUploadDialogVisible)
+{
+    <!-- Document Upload Dialog -->
+    <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @onclick="@(() => _isUploadDialogVisible = false)"></div>
+
+            <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+            <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+                <div>
+                    <div class="mt-3 sm:mt-0 sm:text-left">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                            @L["UploadDocument"]
+                        </h3>
+                        <div class="mt-4">
+                            <form>
+                                <div class="space-y-4">
+                                    <div>
+                                        <label for="document-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["DocumentType"]</label>
+                                        <select id="document-type" required
+                                                class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md"
+                                                @bind="_documentType">
+                                            <option value="@DocumentType.Invoice">@L["Invoice"]</option>
+                                            <option value="@DocumentType.PaymentProof">@L["PaymentProof"]</option>
+                                            <option value="@DocumentType.ProductImage">@L["ProductImage"]</option>
+                                            <option value="@DocumentType.CustomsDeclaration">@L["CustomsDeclaration"]</option>
+                                            <option value="@DocumentType.OtherDocumentation">@L["OtherDocumentation"]</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <label for="document-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Notes"]</label>
+                                        <div class="mt-1">
+                                            <textarea id="document-notes" rows="3"
+                                                      class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                      @bind="_documentNotes"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <label for="file-upload" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["File"]</label>
+                                        <div class="mt-1 flex items-center">
+                                            <InputFile id="file-upload" OnChange="OnInputFileChange" accept=".pdf,.jpg,.jpeg,.png" class="hidden" />
+                                            <label for="file-upload" class="cursor-pointer inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                                @L["Choose File"]
+                                            </label>
+                                            <span class="ml-3 text-sm text-gray-500 dark:text-gray-400">
+                                                @if (_selectedFile != null)
+                                                {
+                                                    @_selectedFile.FileName
+                                                    <span class="ml-1">(@(_selectedFile.Size / 1024) KB)</span>
+                                                }
+                                                else
+                                                {
+                                                    @L["No file selected"]
+                                                }
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                    <button type="button"
+                            @onclick="UploadDocument"
+                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm"
+                            disabled="@(_selectedFile == null || _isUploading)">
+                        @if (_isUploading)
+                        {
+                            <div class="inline-flex items-center">
+                                <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                @L["Uploading"]
+                            </div>
                         }
                         else
                         {
-                            <MudText Typo="Typo.body2">@L["No file selected"]</MudText>
+                            @L["Upload"]
                         }
-                    </div>
-                    
-                    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary"
-                              StartIcon="@Icons.Material.Filled.CloudUpload" for="fileInput">
-                        @L["Choose File"]
-                    </MudButton>
+                    </button>
+                    <button type="button"
+                            @onclick="@(() => _isUploadDialogVisible = false)"
+                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                        @L["Cancel"]
+                    </button>
                 </div>
-            </MudForm>
-        </DialogContent>
-        <DialogActions>
-            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => _isUploadDialogVisible = false)">
+            </div>
+        </div>
+    </div>
+}
+
+<div id="payment-element-container" class="@(_isStripeInitialized ? "fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50" : "hidden")">
+    <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full shadow-xl">
+        <h3 class="text-lg font-medium text-gray-900 dark:text-white mb-4">@L["Payment"]</h3>
+        <div id="payment-element" class="mb-6"></div>
+        <div class="flex justify-end">
+            <button type="button"
+                    @onclick="@(() => _isStripeInitialized = false)"
+                    class="mr-3 inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-1 sm:text-sm">
                 @L["Cancel"]
-            </MudButton>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isUploadFormValid || _selectedFile == null || _isUploading)"
-                      OnClick="UploadDocument">
-                @if (_isUploading)
-                {
-                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                    <MudText Class="ms-2">@L["Uploading"]</MudText>
-                }
-                else
-                {
-                    @L["Upload"]
-                }
-            </MudButton>
-        </DialogActions>
-    </MudDialog>
-    
-    <div id="payment-element-container" class="@(_isStripeInitialized ? "d-block" : "d-none")"></div>
-}
-else
-{
-    <MudAlert Severity="Severity.Error">@L["Shipment not found."]</MudAlert>
-}
+            </button>
+            <button type="button"
+                    id="submit-payment"
+                    class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm">
+                @L["Pay"]
+            </button>
+        </div>
+    </div>
+</div>
 
 @code {
     [Parameter]
@@ -371,10 +681,9 @@ else
     private bool _isProcessingPayment = false;
     private bool _isStripeInitialized = false;
     private bool _isUploadDialogVisible = false;
-    private bool _isUploadFormValid = false;
     private bool _isUploading = false;
+    private int _activeTab = 0;
     private string _newNote;
-    private MudForm _uploadForm;
     private UploadedFile _selectedFile;
     private DocumentType _documentType = DocumentType.Invoice;
     private string _documentNotes;
@@ -394,11 +703,12 @@ else
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error loading shipment: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error loading shipment: "] + ex.Message, "error");
         }
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -408,11 +718,11 @@ else
         {
             await ShipmentService.UpdateShipmentStatusAsync(Id, status);
             await LoadShipmentAsync();
-            Snackbar.Add(L["Shipment status updated successfully"], Severity.Success);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Shipment status updated successfully"], "success");
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error updating status: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error updating status: "] + ex.Message, "error");
         }
     }
 
@@ -425,12 +735,12 @@ else
             var clientSecret = await StripeService.CreatePaymentIntentAsync(Id);
             var publicKey = StripeService.GetPublicKey();
 
-            await JSRuntime.InvokeVoidAsync("initializeStripePayment", clientSecret, publicKey, "payment-element-container", NavigationManager.Uri);
+            await JSRuntime.InvokeVoidAsync("initializeStripePayment", clientSecret, publicKey, "payment-element", NavigationManager.Uri);
             _isStripeInitialized = true;
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error initializing payment: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error initializing payment: "] + ex.Message, "error");
         }
         finally
         {
@@ -454,68 +764,68 @@ else
 
     private UploadedFile ConvertToUploadedFile(IBrowserFile file)
     {
-        // Puedes definir un límite de tamaño para el stream si es necesario, por ejemplo: file.OpenReadStream(1024 * 1024 * 15) para 15MB
         return new UploadedFile
             {
-                FileStream = file.OpenReadStream(file.Size), // O bien, especifica un límite de tamaño máximo
+                FileStream = file.OpenReadStream(file.Size),
                 FileName = file.Name,
                 ContentType = file.ContentType,
                 Size = file.Size
             };
     }
-    
+
     private async Task UploadDocument()
     {
         if (_selectedFile == null)
         {
             return;
         }
-        
+
         _isUploading = true;
-        
+
         try
         {
             await ShipmentService.UploadDocumentAsync(Id, _selectedFile, _documentType, _documentNotes);
             _isUploadDialogVisible = false;
             await LoadShipmentAsync();
-            Snackbar.Add(L["Document uploaded successfully"], Severity.Success);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Document uploaded successfully"], "success");
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error uploading document: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error uploading document: "] + ex.Message, "error");
         }
         finally
         {
             _isUploading = false;
         }
     }
-    
+
     private async Task AddNote()
     {
         if (string.IsNullOrWhiteSpace(_newNote))
         {
             return;
         }
-        
+
         try
         {
             // Call a service to add a note
             // For simplicity, we'll just reload the shipment
             _newNote = "";
             await LoadShipmentAsync();
+            await JSRuntime.InvokeVoidAsync("showToast", L["Note added successfully"], "success");
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error adding note: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error adding note: "] + ex.Message, "error");
         }
     }
-    
+
     private async Task CopyTrackingNumber()
     {
         await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _shipment.TrackingNumber);
-        Snackbar.Add(L["Tracking number copied to clipboard"], Severity.Success);
+        await JSRuntime.InvokeVoidAsync("showToast", L["Tracking number copied to clipboard"], "success");
     }
-    
+
     private string GetDocumentTypeName(DocumentType type) => type switch
     {
         DocumentType.Invoice => L["Invoice"],
@@ -526,25 +836,25 @@ else
         DocumentType.OtherDocumentation => L["OtherDocumentation"],
         _ => type.ToString()
     };
-    
-    private Color GetTimelineColor(ShipmentStatus status) => status switch
+
+    private string GetStatusBgColor(ShipmentStatus status) => status switch
     {
-        ShipmentStatus.Draft => Color.Default,
-        ShipmentStatus.Submitted => Color.Info,
-        ShipmentStatus.AwaitingDocuments => Color.Warning,
-        ShipmentStatus.DocumentsReviewed => Color.Info,
-        ShipmentStatus.AwaitingPayment => Color.Warning,
-        ShipmentStatus.AwaitingArrival => Color.Info,
-        ShipmentStatus.ReceivedInWarehouse => Color.Info,
-        ShipmentStatus.Processing => Color.Info,
-        ShipmentStatus.InTransit => Color.Primary,
-        ShipmentStatus.InDelivery => Color.Primary,
-        ShipmentStatus.Delivered => Color.Success,
-        ShipmentStatus.Exception => Color.Error,
-        ShipmentStatus.Cancelled => Color.Error,
-        _ => Color.Default
+        ShipmentStatus.Draft => "bg-gray-500 dark:bg-gray-600",
+        ShipmentStatus.Submitted => "bg-blue-500 dark:bg-blue-600",
+        ShipmentStatus.AwaitingDocuments => "bg-yellow-500 dark:bg-yellow-600",
+        ShipmentStatus.DocumentsReviewed => "bg-blue-500 dark:bg-blue-600",
+        ShipmentStatus.AwaitingPayment => "bg-yellow-500 dark:bg-yellow-600",
+        ShipmentStatus.AwaitingArrival => "bg-blue-500 dark:bg-blue-600",
+        ShipmentStatus.ReceivedInWarehouse => "bg-blue-500 dark:bg-blue-600",
+        ShipmentStatus.Processing => "bg-blue-500 dark:bg-blue-600",
+        ShipmentStatus.InTransit => "bg-indigo-500 dark:bg-indigo-600",
+        ShipmentStatus.InDelivery => "bg-purple-500 dark:bg-purple-600",
+        ShipmentStatus.Delivered => "bg-green-500 dark:bg-green-600",
+        ShipmentStatus.Exception => "bg-red-500 dark:bg-red-600",
+        ShipmentStatus.Cancelled => "bg-red-500 dark:bg-red-600",
+        _ => "bg-gray-500 dark:bg-gray-600"
     };
-    
+
     private string GetStatusText(ShipmentStatus status) => status switch
     {
         ShipmentStatus.Draft => L["StatusDraft"],

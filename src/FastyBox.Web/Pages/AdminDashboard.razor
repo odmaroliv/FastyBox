@@ -7,101 +7,229 @@
 @inject IUserService userService
 @inject NavigationManager NavigationManager
 
-<MudGrid>
-    <MudItem xs="12">
-        <MudText Typo="Typo.h4" Class="mb-4">@L["AdminDashboard"]</MudText>
-    </MudItem>
-    
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.subtitle1">@L["PendingShipments"]</MudText>
-            <MudText Typo="Typo.h5">@_pendingShipments</MudText>
-        </MudPaper>
-    </MudItem>
-    
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.subtitle1">@L["ActiveShipments"]</MudText>
-            <MudText Typo="Typo.h5">@_activeShipments</MudText>
-        </MudPaper>
-    </MudItem>
-    
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.subtitle1">@L["CompletedShipments"]</MudText>
-            <MudText Typo="Typo.h5">@_completedShipments</MudText>
-        </MudPaper>
-    </MudItem>
-    
-    <MudItem xs="12" sm="6" md="3">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.subtitle1">@L["TotalRevenue"]</MudText>
-            <MudText Typo="Typo.h5">$@_totalRevenue.ToString("N2")</MudText>
-            <MudText Typo="Typo.caption">@L["ThisMonth"]</MudText>
-        </MudPaper>
-    </MudItem>
-    
-    <MudItem xs="12" md="8">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">@L["AwaitingReview"]</MudText>
-            
-            @if (_isLoading)
-            {
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-            }
-            else if (_shipments?.Count > 0)
-            {
-                <MudTable Items="@_shipments" Hover="true" Breakpoint="Breakpoint.Sm">
-                    <HeaderContent>
-                        <MudTh>@L["TrackingNumber"]</MudTh>
-                        <MudTh>@L["Status"]</MudTh>
-                        <MudTh>@L["User"]</MudTh>
-                        <MudTh>@L["DeclaredValue"]</MudTh>
-                        <MudTh>@L["CreatedAt"]</MudTh>
-                        <MudTh></MudTh>
-                    </HeaderContent>
-                    <RowTemplate>
-                        <MudTd DataLabel="@L["TrackingNumber"]">@context.TrackingNumber</MudTd>
-                        <MudTd DataLabel="@L["Status"]">
-                            <ShipmentStatusBadge Status="@context.Status" />
-                        </MudTd>
-                        <MudTd DataLabel="@L["User"]">@(context.User?.FullName ?? "N/A")</MudTd>
-                        <MudTd DataLabel="@L["DeclaredValue"]">$@context.DeclaredValue.ToString("N2")</MudTd>
-                        <MudTd DataLabel="@L["CreatedAt"]">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
-                        <MudTd>
-                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
-                                          OnClick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{context.Id}"))" />
-                        </MudTd>
-                    </RowTemplate>
-                </MudTable>
-            }
-            else
-            {
-                <MudAlert Severity="Severity.Info">
-                    @L["No shipments awaiting review"]
-                </MudAlert>
-            }
-        </MudPaper>
-    </MudItem>
-    
-    <MudItem xs="12" md="4">
-        <MudPaper Elevation="2" Class="pa-4">
-            <MudText Typo="Typo.h6" Class="mb-4">@L["ShipmentStatusDistribution"]</MudText>
-            
-            @if (_isLoading)
-            {
-                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-            }
-            else
-            {
-                <MudChart ChartType="ChartType.Pie"
-                          Width="300px" Height="300px"
-                          InputData="@_statusData"
-                          InputLabels="@_statusLabels" />
-            }
-        </MudPaper>
-    </MudItem>
-</MudGrid>
+<PageTitle>@L["AdminDashboard"] - @L["AppName"]</PageTitle>
+
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">@L["AdminDashboard"]</h1>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <!-- Stats Cards -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900/20 rounded-md p-3">
+                        <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["PendingShipments"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_pendingShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-100 dark:bg-blue-900/20 rounded-md p-3">
+                        <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["ActiveShipments"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_activeShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-green-100 dark:bg-green-900/20 rounded-md p-3">
+                        <svg class="h-6 w-6 text-green-600 dark:text-green-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["CompletedShipments"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_completedShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-sm rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-100 dark:bg-yellow-900/20 rounded-md p-3">
+                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["TotalRevenue"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    $@_totalRevenue.ToString("N2")
+                                </div>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">@L["ThisMonth"]</p>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <!-- Shipments Awaiting Review -->
+        <div class="lg:col-span-2">
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">@L["AwaitingReview"]</h2>
+                </div>
+
+                <div class="px-4 py-5 sm:p-6">
+                    @if (_isLoading)
+                    {
+                        <div class="flex justify-center items-center py-6">
+                            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+                        </div>
+                    }
+                    else if (_shipments?.Count > 0)
+                    {
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                                <thead class="bg-gray-50 dark:bg-gray-700">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            @L["TrackingNumber"]
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            @L["Status"]
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            @L["User"]
+                                        </th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                            @L["CreatedAt"]
+                                        </th>
+                                        <th scope="col" class="relative px-6 py-3">
+                                            <span class="sr-only">@L["Actions"]</span>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                                    @foreach (var shipment in _shipments)
+                                    {
+                                        <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 dark:text-primary-400">
+                                                @shipment.TrackingNumber
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                                <ShipmentStatusBadge Status="@shipment.Status" />
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                @(shipment.User?.FullName ?? "N/A")
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                                @shipment.CreatedAt.ToLocalTime().ToString("g")
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <button @onclick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{shipment.Id}"))"
+                                                        class="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300">
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="py-6 text-center">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["No shipments awaiting review"]</h3>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Distribution Chart -->
+        <div>
+            <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+                <div class="px-4 py-5 sm:px-6 border-b border-gray-200 dark:border-gray-700">
+                    <h2 class="text-lg font-medium text-gray-900 dark:text-white">@L["ShipmentStatusDistribution"]</h2>
+                </div>
+
+                <div class="px-4 py-5 sm:p-6">
+                    @if (_isLoading)
+                    {
+                        <div class="flex justify-center items-center py-6">
+                            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="w-full h-64 flex items-center justify-center">
+                            <!-- Placeholder for chart - in a real implementation, you'd use a charting library -->
+                            <div class="w-full h-full flex items-center justify-center">
+                                <div class="grid grid-cols-2 gap-2 w-full">
+                                    @for (int i = 0; i < Math.Min(_statusData.Length, _statusLabels.Length); i++)
+                                    {
+                                        <div class="text-sm text-gray-500 dark:text-gray-400">@_statusLabels[i]</div>
+                                        <div class="flex items-center">
+                                            <div class="h-4 bg-primary-@(600 - i * 100) dark:bg-primary-@(500 - i * 100)" style="width: @((_statusData[i] / _statusData.Max()) * 100)%"></div>
+                                            <div class="ml-2 text-sm text-gray-700 dark:text-gray-300">@_statusData[i]</div>
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     private List<ShipmentDto> _shipments;
@@ -110,42 +238,42 @@
     private int _completedShipments;
     private decimal _totalRevenue;
     private bool _isLoading = true;
-    
+
     // Chart data
     private double[] _statusData;
     private string[] _statusLabels;
-    
+
     protected override async Task OnInitializedAsync()
     {
         await LoadData();
     }
-    
+
     private async Task LoadData()
     {
         _isLoading = true;
-        
+
         try
         {
             var tenantId = await userService.GetCurrentTenantIdAsync();
-            
+
             // Get dashboard data from a service
             // This is mocked data for now
             _pendingShipments = 12;
             _activeShipments = 25;
             _completedShipments = 156;
             _totalRevenue = 12450.75m;
-            
+
             // Mocked chart data
             _statusData = new double[] { 25, 77, 28, 5, 15, 6 };
-            _statusLabels = new string[] { 
-                L["StatusAwaitingDocuments"], 
-                L["StatusReceivedInWarehouse"], 
-                L["StatusInTransit"], 
+            _statusLabels = new string[] {
+                L["StatusAwaitingDocuments"],
+                L["StatusReceivedInWarehouse"],
+                L["StatusInTransit"],
                 L["StatusInDelivery"],
                 L["StatusDelivered"],
                 L["StatusException"]
-            };
-            
+        };
+
             // Mocked shipment data
             _shipments = new List<ShipmentDto>
             {
@@ -155,6 +283,7 @@
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 }

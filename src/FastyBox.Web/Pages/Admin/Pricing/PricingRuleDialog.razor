@@ -2,57 +2,109 @@
 @using FastyBox.Web.Resources
 @using FastyBox.Web.Services
 @using Microsoft.Extensions.Localization
-@using MudBlazor
 @inject IStringLocalizer<SharedResource> L
 @inject IPricingService PricingService
-@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
-<MudDialog>
-    <DialogContent>
-        <MudForm @ref="_form" @bind-IsValid="@_isValid">
-            <MudGrid>
-                <MudItem xs="12" md="6">
-                    <MudNumericField T="decimal" Label="@L["MinWeight"]" @bind-Value="_model.MinWeight" Required="true" 
-                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.End" 
-                                    AdornmentText="kg" AdornmentColor="Color.Secondary" />
-                </MudItem>
-                
-                <MudItem xs="12" md="6">
-                    <MudNumericField T="decimal" Label="@L["MaxWeight"]" @bind-Value="_model.MaxWeight" Required="true" 
-                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.End" 
-                                    AdornmentText="kg" AdornmentColor="Color.Secondary" />
-                </MudItem>
-                
-                <MudItem xs="12">
-                    <MudNumericField T="decimal" Label="@L["Price"]" @bind-Value="_model.Price" Required="true" 
-                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.Start" 
-                                    AdornmentText="$" AdornmentColor="Color.Secondary" />
-                </MudItem>
+<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @onclick="Cancel"></div>
 
-                <MudCheckBox T="bool" @bind-Value="_model.IsActive" Label="@L["Active"]" Color="Color.Primary" />
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            </MudGrid>
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">@L["Cancel"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || _isSubmitting)">
-            @if (_isSubmitting)
-            {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">@L["Processing"]</MudText>
-            }
-            else
-            {
-                @L["Save"]
-            }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+                <div class="mt-3 sm:mt-0 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                        @(PricingRule?.Id != default ? L["Edit Pricing Rule"] : L["Add Pricing Rule"])
+                    </h3>
+                    <div class="mt-4">
+                        <form @onsubmit="Submit">
+                            <div class="space-y-4">
+                                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label for="min-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["MinWeight"]</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <input type="number" step="0.01" min="0" id="min-weight" required 
+                                                   class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                   @bind="_model.MinWeight">
+                                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 dark:text-gray-400 sm:text-sm">kg</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label for="max-weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["MaxWeight"]</label>
+                                        <div class="mt-1 relative rounded-md shadow-sm">
+                                            <input type="number" step="0.01" min="0" id="max-weight" required 
+                                                   class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                                   @bind="_model.MaxWeight">
+                                            <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                <span class="text-gray-500 dark:text-gray-400 sm:text-sm">kg</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label for="price" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Price"]</label>
+                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                        </div>
+                                        <input type="number" step="0.01" min="0" id="price" required 
+                                               class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                               @bind="_model.Price">
+                                    </div>
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <input id="is-active" name="is-active" type="checkbox" 
+                                           class="h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 dark:border-gray-600 dark:bg-gray-700 rounded"
+                                           @bind="_model.IsActive">
+                                    <label for="is-active" class="ml-2 block text-sm text-gray-700 dark:text-gray-300">
+                                        @L["Active"]
+                                    </label>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                <button type="button" 
+                        @onclick="Submit"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm">
+                    @if (_isSubmitting)
+                    {
+                        <div class="inline-flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            @L["Processing"]
+                        </div>
+                    }
+                    else
+                    {
+                        @L["Save"]
+                    }
+                </button>
+                <button type="button" 
+                        @onclick="Cancel"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                    @L["Cancel"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; }
+    public Action<bool> CloseDialog { get; set; }
     
     [Parameter]
     public PricingRule PricingRule { get; set; }
@@ -60,8 +112,7 @@
     [Parameter]
     public Guid? TenantId { get; set; }
     
-    private MudForm _form;
-    private bool _isValid;
+    private bool _isValid = true;
     private bool _isSubmitting;
     private PricingRule _model = new();
     
@@ -93,42 +144,34 @@
     
     private void Cancel()
     {
-        MudDialog.Cancel();
+        CloseDialog?.Invoke(false);
     }
     
     private async Task Submit()
     {
-        if (!_isValid)
-        {
-            return;
-        }
-        
         _isSubmitting = true;
         
         try
         {
-            // Call a service to save the pricing rule
-            
             // Validation check
             if (_model.MinWeight > _model.MaxWeight)
             {
-                Snackbar.Add(L["Minimum weight cannot be greater than maximum weight"], Severity.Warning);
+                await JSRuntime.InvokeVoidAsync("showToast", L["Minimum weight cannot be greater than maximum weight"], "warning");
                 _isSubmitting = false;
                 return;
             }
             
-            // Here we would call the service
+            // Here we would call the service to save the pricing rule
             await Task.Delay(500); // Simulated API call
             
-            MudDialog.Close(DialogResult.Ok(true));
+            CloseDialog?.Invoke(true);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error saving pricing rule: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error saving pricing rule: "] + ex.Message, "error");
         }
         finally
         {
             _isSubmitting = false;
         }
     }
-}

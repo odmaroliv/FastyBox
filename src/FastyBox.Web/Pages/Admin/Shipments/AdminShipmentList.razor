@@ -5,149 +5,250 @@
 @using FastyBox.Domain.Enums
 @using FastyBox.Web.Resources
 @using FastyBox.Web.Services
-@using FluentValidation
 @using Microsoft.AspNetCore.Authorization
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Localization
-@using MudBlazor
-@using Severity = MudBlazor.Severity
 @attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
 @inject IStringLocalizer<SharedResource> L
 @inject FastyBox.Web.Services.IShipmentService ShipmentService
 @inject IUserService UserService
 @inject NavigationManager NavigationManager
-@inject ISnackbar Snackbar
-@inject FastyBox.Web.Services.IShipmentService ShipmentService
+@inject IJSRuntime JSRuntime
 
 <PageTitle>@L["Shipments"] - @L["Admin"] - @L["AppName"]</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge">
-    <MudGrid>
-        <MudItem xs="12" Class="d-flex justify-space-between align-center">
-            <MudText Typo="Typo.h4">@L["Shipments"]</MudText>
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" 
-                       OnClick="@(() => NavigationManager.NavigateTo("/shipments/new"))">
-                @L["NewShipment"]
-            </MudButton>
-        </MudItem>
-        
-        <MudItem xs="12">
-            <MudPaper Class="pa-4">
-                <MudGrid>
-                    <MudItem xs="12" md="3">
-                        <MudSelect T="ShipmentStatus?" Label="@L["Status"]" @bind-Value="_selectedStatus" FullWidth="true" HelperText="@L["Filter by status"]">
-                            <MudSelectItem T="ShipmentStatus?" Value="@(null)">@L["All Statuses"]</MudSelectItem>
-                                <MudSelectItem T="ShipmentStatus?" Value="@ShipmentStatus.Draft">@L["StatusDraft"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Draft">@L["StatusDraft"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Submitted">@L["StatusSubmitted"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.AwaitingDocuments">@L["StatusAwaitingDocuments"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.DocumentsReviewed">@L["StatusDocumentsReviewed"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.AwaitingPayment">@L["StatusAwaitingPayment"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.AwaitingArrival">@L["StatusAwaitingArrival"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.ReceivedInWarehouse">@L["StatusReceivedInWarehouse"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Processing">@L["StatusProcessing"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.InTransit">@L["StatusInTransit"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.InDelivery">@L["StatusInDelivery"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Delivered">@L["StatusDelivered"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Exception">@L["StatusException"]</MudSelectItem>
-                            <MudSelectItem Value="@ShipmentStatus.Cancelled">@L["StatusCancelled"]</MudSelectItem>
-                        </MudSelect>
-                    </MudItem>
-                    
-                    <MudItem xs="12" md="3">
-                            <MudSelect T="ShipmentType?" Label="@L["Type"]" @bind-Value="_selectedType" FullWidth="true"
-                                       HelperText="@L["Filter by type"]">
-                                <MudSelectItem T="ShipmentType?" Value="@(null)">@L["All Types"]</MudSelectItem>
-                                <MudSelectItem T="ShipmentType?" Value="@ShipmentType.Forwarding">@L["TypeForwarding"]</MudSelectItem>
-                                <MudSelectItem T="ShipmentType?" Value="@ShipmentType.CommercialImport">@L["TypeCommercialImport"]</MudSelectItem>
-                            </MudSelect>
-
-                    </MudItem>
-                    
-                    <MudItem xs="12" md="6">
-                        <MudTextField T="string" Label="@L["Search"]" @bind-Value="_searchString" FullWidth="true"
-                                    HelperText="@L["Search by tracking number, user name, or reference"]" />
-                    </MudItem>
-                    
-                    <MudItem xs="12" Class="d-flex justify-end">
-                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyFilters">
-                            @L["Apply Filters"]
-                        </MudButton>
-                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="ClearFilters">
-                            @L["Clear Filters"]
-                        </MudButton>
-                    </MudItem>
-                </MudGrid>
-            </MudPaper>
-        </MudItem>
-        
-        <MudItem xs="12">
-            <MudPaper Class="pa-4">
-                @if (_isLoading)
-                {
-                    <div class="d-flex justify-center">
-                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
-                    </div>
-                }
-                else if (_shipments?.Items?.Count > 0)
-                {
-                   <MudTable Items="@_shipments.Items" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_isLoading">
-                        <HeaderContent>
-                            <MudTh>@L["TrackingNumber"]</MudTh>
-                            <MudTh>@L["User"]</MudTh>
-                            <MudTh>@L["Type"]</MudTh>
-                            <MudTh>@L["Status"]</MudTh>
-                            <MudTh>@L["DeclaredValue"]</MudTh>
-                            <MudTh>@L["TotalCost"]</MudTh>
-                            <MudTh>@L["IsPaid"]</MudTh>
-                            <MudTh>@L["CreatedAt"]</MudTh>
-                            <MudTh></MudTh>
-                        </HeaderContent>
-                            <RowTemplate>
-                                <MudTr>
-                                    <MudTd DataLabel="@L["TrackingNumber"]">@context.TrackingNumber</MudTd>
-                                    <MudTd DataLabel="@L["User"]">@(context.User?.FullName ?? "-")</MudTd>
-                                    <MudTd DataLabel="@L["Type"]">
-                                        @(context.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])
-                                    </MudTd>
-                                    <MudTd DataLabel="@L["Status"]">
-                                        <ShipmentStatusBadge Status="@context.Status" />
-                                    </MudTd>
-                                    <MudTd DataLabel="@L["DeclaredValue"]">$@context.DeclaredValue.ToString("N2")</MudTd>
-                                    <MudTd DataLabel="@L["TotalCost"]">$@context.TotalCost.ToString("N2")</MudTd>
-                                    <MudTd DataLabel="@L["IsPaid"]">
-                                        @if (context.IsPaid)
+<div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="mb-6 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@L["Shipments"]</h1>
+        <button type="button" @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))" 
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            @L["NewShipment"]
+        </button>
+    </div>
+    
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg p-6 mb-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+                <label for="status-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Status"]</label>
+                <select id="status-filter" 
+                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md"
+                        @bind="_selectedStatus">
+                    <option value="">@L["All Statuses"]</option>
+                    @foreach (var status in Enum.GetValues<ShipmentStatus>())
+                    {
+                        <option value="@status">@GetStatusText(status)</option>
+                    }
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@L["Filter by status"]</p>
+            </div>
+            
+            <div>
+                <label for="type-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Type"]</label>
+                <select id="type-filter" 
+                        class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md"
+                        @bind="_selectedType">
+                    <option value="">@L["All Types"]</option>
+                    <option value="@ShipmentType.Forwarding">@L["TypeForwarding"]</option>
+                    <option value="@ShipmentType.CommercialImport">@L["TypeCommercialImport"]</option>
+                </select>
+                <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">@L["Filter by type"]</p>
+            </div>
+            
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Search"]</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="text" id="search"
+                           class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                           placeholder="@L["Search by tracking number, user name, or reference"]"
+                           @bind="_searchString">
+                </div>
+            </div>
+            
+            <div class="flex items-end space-x-2">
+                <button type="button" @onclick="ApplyFilters"
+                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    @L["Apply Filters"]
+                </button>
+                <button type="button" @onclick="ClearFilters"
+                        class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                    @L["Clear Filters"]
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shipment Table -->
+    <div class="bg-white dark:bg-gray-800 shadow-sm rounded-lg overflow-hidden">
+        @if (_isLoading)
+        {
+            <div class="flex justify-center items-center p-6">
+                <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+            </div>
+        }
+        else if (_shipments?.Items?.Count > 0)
+        {
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["TrackingNumber"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["User"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Type"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Status"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["DeclaredValue"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["TotalCost"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["IsPaid"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["CreatedAt"]
+                            </th>
+                            <th scope="col" class="relative px-6 py-3">
+                                <span class="sr-only">@L["Actions"]</span>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach (var shipment in _shipments.Items)
+                        {
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 dark:text-primary-400">
+                                    @shipment.TrackingNumber
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @(shipment.User?.FullName ?? "-")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @(shipment.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <ShipmentStatusBadge Status="@shipment.Status" />
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    $@shipment.DeclaredValue.ToString("N2")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    $@shipment.TotalCost.ToString("N2")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @if (shipment.IsPaid)
                                     {
-                                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                                        <svg class="h-5 w-5 text-green-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                                        </svg>
                                     }
                                     else
                                     {
-                                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" />
+                                        <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                                        </svg>
                                     }
-                                </MudTd>
-                                <MudTd DataLabel="@L["CreatedAt"]">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
-                                    <MudTd>
-                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
-                                                       OnClick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{context.Id}"))" />
-                                    </MudTd>
-                                </MudTr>
-                            </RowTemplate>
-
-    <PagerContent>
-        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
-    </PagerContent>
-</MudTable>
-                }
-                else
-                {
-                    <MudAlert Severity="Severity.Info">
-                        @L["No shipments found matching the criteria."]
-                    </MudAlert>
-                }
-            </MudPaper>
-        </MudItem>
-    </MudGrid>
-</MudContainer>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @shipment.CreatedAt.ToLocalTime().ToString("g")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                    <button @onclick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{shipment.Id}"))" 
+                                            class="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                        </svg>
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            @L["Showing"]
+                            <span class="font-medium">@((_currentPage - 1) * _pageSize + 1)</span>
+                            @L["to"]
+                            <span class="font-medium">@Math.Min(_currentPage * _pageSize, _shipments.TotalCount)</span>
+                            @L["of"]
+                            <span class="font-medium">@_shipments.TotalCount</span>
+                            @L["results"]
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button @onclick="@(() => OnPageChanged(_currentPage - 1))" 
+                                    disabled="@(_currentPage <= 1)"
+                                    class="@(_currentPage <= 1 ? "opacity-50 cursor-not-allowed" : "") relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <span class="sr-only">@L["Previous"]</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                            
+                            @for (int i = 1; i <= _shipments.TotalPages; i++)
+                            {
+                                var page = i;
+                                <button @onclick="@(() => OnPageChanged(page))" 
+                                        class="@(page == _currentPage
+                                            ? "z-10 bg-primary-50 dark:bg-primary-900/30 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400"
+                                            : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700")
+                                                relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                                    @page
+                                </button>
+                            }
+                            
+                            <button @onclick="@(() => OnPageChanged(_currentPage + 1))" 
+                                    disabled="@(_currentPage >= _shipments.TotalPages)"
+                                    class="@(_currentPage >= _shipments.TotalPages ? "opacity-50 cursor-not-allowed" : "") relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <span class="sr-only">@L["Next"]</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="py-12 text-center">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["No shipments found matching the criteria."]</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    @L["Try adjusting your filters or create a new shipment."]
+                </p>
+                <div class="mt-6">
+                    <button type="button" @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))" 
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        @L["New Shipment"]
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
 
 @code {
     private PaginatedList<ShipmentBriefDto> _shipments;
@@ -184,11 +285,12 @@
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error loading shipments: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error loading shipments: "] + ex.Message, "error");
         }
         finally
         {
             _isLoading = false;
+            StateHasChanged();
         }
     }
 
@@ -209,7 +311,28 @@
 
     private async Task OnPageChanged(int page)
     {
+        if (page < 1 || (_shipments != null && page > _shipments.TotalPages))
+            return;
+
         _currentPage = page;
         await LoadShipmentsAsync();
     }
+    
+    private string GetStatusText(ShipmentStatus status) => status switch
+    {
+        ShipmentStatus.Draft => L["StatusDraft"],
+        ShipmentStatus.Submitted => L["StatusSubmitted"],
+        ShipmentStatus.AwaitingDocuments => L["StatusAwaitingDocuments"],
+        ShipmentStatus.DocumentsReviewed => L["StatusDocumentsReviewed"],
+        ShipmentStatus.AwaitingPayment => L["StatusAwaitingPayment"],
+        ShipmentStatus.AwaitingArrival => L["StatusAwaitingArrival"],
+        ShipmentStatus.ReceivedInWarehouse => L["StatusReceivedInWarehouse"],
+        ShipmentStatus.Processing => L["StatusProcessing"],
+        ShipmentStatus.InTransit => L["StatusInTransit"],
+        ShipmentStatus.InDelivery => L["StatusInDelivery"],
+        ShipmentStatus.Delivered => L["StatusDelivered"],
+        ShipmentStatus.Exception => L["StatusException"],
+        ShipmentStatus.Cancelled => L["StatusCancelled"],
+        _ => status.ToString()
+    };
 }

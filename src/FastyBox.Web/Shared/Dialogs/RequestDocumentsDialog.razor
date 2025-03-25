@@ -2,86 +2,125 @@
 @using FastyBox.Domain.Enums
 @using FastyBox.Web.Resources
 @using Microsoft.Extensions.Localization
-@using MudBlazor
 @inject IStringLocalizer<SharedResource> L
 @inject INotificationService NotificationService
-@inject ISnackbar Snackbar
+@inject IJSRuntime JSRuntime
 
-<MudDialog>
-    <DialogContent>
-        <MudForm @ref="_form" @bind-IsValid="@_isValid">
-            <MudTextField T="string" Label="@L["To"]" Value="@UserEmail" Disabled="true" FullWidth="true" Class="mb-4" />
-            
-            <MudSelect T="DocumentType" Label="@L["DocumentType"]" @bind-Value="_documentType" Required="true"
-                      RequiredError="@L["ErrorFieldRequired"]" FullWidth="true" Class="mb-4">
-                <MudSelectItem Value="@DocumentType.Invoice">@L["Invoice"]</MudSelectItem>
-                <MudSelectItem Value="@DocumentType.PaymentProof">@L["PaymentProof"]</MudSelectItem>
-                <MudSelectItem Value="@DocumentType.ProductImage">@L["ProductImage"]</MudSelectItem>
-                <MudSelectItem Value="@DocumentType.CustomsDeclaration">@L["CustomsDeclaration"]</MudSelectItem>
-                <MudSelectItem Value="@DocumentType.OtherDocumentation">@L["OtherDocumentation"]</MudSelectItem>
-            </MudSelect>
-            
-            <MudTextField T="string" Label="@L["Message"]" @bind-Value="_message" Required="true" 
-                         RequiredError="@L["ErrorFieldRequired"]" Lines="5" FullWidth="true" />
-        </MudForm>
-    </DialogContent>
-    <DialogActions>
-        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">@L["Cancel"]</MudButton>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || _isSending)">
-            @if (_isSending)
-            {
-                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
-                <MudText Class="ms-2">@L["Sending"]</MudText>
-            }
-            else
-            {
-                @L["Send"]
-            }
-        </MudButton>
-    </DialogActions>
-</MudDialog>
+<div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <!-- Background overlay -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 dark:bg-gray-900 dark:bg-opacity-75 transition-opacity" aria-hidden="true" @onclick="Cancel"></div>
+
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+        <div class="inline-block align-bottom bg-white dark:bg-gray-800 rounded-lg px-4 pt-5 pb-4 text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full sm:p-6">
+            <div>
+                <div class="mt-3 sm:mt-0 sm:text-left">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white" id="modal-title">
+                        @L["Request Documents"]
+                    </h3>
+                    <div class="mt-4">
+                        <form @onsubmit="Submit">
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="to-email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["To"]</label>
+                                    <input type="text" id="to-email" disabled value="@UserEmail"
+                                           class="mt-1 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md bg-gray-50 dark:bg-gray-800 cursor-not-allowed">
+                                </div>
+
+                                <div>
+                                    <label for="document-type" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["DocumentType"]</label>
+                                    <select id="document-type"
+                                            class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md"
+                                            @bind="_documentType">
+                                        <option value="@DocumentType.Invoice">@L["Invoice"]</option>
+                                        <option value="@DocumentType.PaymentProof">@L["PaymentProof"]</option>
+                                        <option value="@DocumentType.ProductImage">@L["ProductImage"]</option>
+                                        <option value="@DocumentType.CustomsDeclaration">@L["CustomsDeclaration"]</option>
+                                        <option value="@DocumentType.OtherDocumentation">@L["OtherDocumentation"]</option>
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label for="message" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Message"]</label>
+                                    <textarea id="message" rows="5" required
+                                              class="mt-1 shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md"
+                                              @bind="_message"></textarea>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-5 sm:mt-6 sm:grid sm:grid-cols-2 sm:gap-3 sm:grid-flow-row-dense">
+                <button type="button"
+                        @onclick="Submit"
+                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-primary-600 text-base font-medium text-white hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:col-start-2 sm:text-sm">
+                    @if (_isSending)
+                    {
+                        <div class="inline-flex items-center">
+                            <svg class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            </svg>
+                            @L["Sending"]
+                        </div>
+                    }
+                    else
+                    {
+                        @L["Send"]
+                    }
+                </button>
+                <button type="button"
+                        @onclick="Cancel"
+                        class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-800 text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 sm:mt-0 sm:col-start-1 sm:text-sm">
+                    @L["Cancel"]
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 @code {
     [CascadingParameter]
-    IMudDialogInstance MudDialog { get; set; }
-    
+    public Action<bool> CloseDialog { get; set; }
+
     [Parameter]
     public Guid ShipmentId { get; set; }
-    
+
     [Parameter]
     public string UserEmail { get; set; }
-    
-    private MudForm _form;
-    private bool _isValid;
+
     private bool _isSending;
     private DocumentType _documentType = DocumentType.Invoice;
-    private string _message;
-    
+    private string _message = "";
+
     private async Task Submit()
     {
-        if (!_isValid)
+        if (string.IsNullOrWhiteSpace(_message))
         {
+            await JSRuntime.InvokeVoidAsync("showToast", L["Please fill in all required fields"], "warning");
             return;
         }
-        
+
         _isSending = true;
-        
+
         try
         {
             // Here we would call the service to request documents
             await Task.Delay(500); // Simulated API call
-            
-            MudDialog.Close(DialogResult.Ok(true));
+
+            CloseDialog?.Invoke(true);
         }
         catch (Exception ex)
         {
-            Snackbar.Add(L["Error requesting documents: "] + ex.Message, Severity.Error);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error requesting documents: "] + ex.Message, "error");
         }
         finally
         {
             _isSending = false;
         }
     }
-    
-    private void Cancel() => MudDialog.Cancel();
+
+    private void Cancel() => CloseDialog?.Invoke(false);
 }
