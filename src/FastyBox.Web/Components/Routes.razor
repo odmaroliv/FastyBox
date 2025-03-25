@@ -1,0 +1,13 @@
+﻿@using Microsoft.AspNetCore.Components.Routing
+@using FastyBox.Web.Shared
+
+<Router AppAssembly="typeof(Program).Assembly">
+    <Found Context="routeData">
+        <RouteView RouteData="routeData" DefaultLayout="typeof(MainLayout)" />
+        <FocusOnNavigate RouteData="routeData" Selector="h1" />
+    </Found>
+    <NotFound>
+        <!-- Opcional: contenido para rutas no encontradas -->
+    </NotFound>
+</Router>
+s

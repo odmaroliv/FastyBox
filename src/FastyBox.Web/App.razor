@@ -1,0 +1,28 @@
+﻿@using Microsoft.AspNetCore.Components.Authorization
+@using Microsoft.AspNetCore.Components.Routing
+@using System.Globalization
+
+<CascadingAuthenticationState>
+    <Router AppAssembly="@typeof(Program).Assembly">
+        <Found Context="routeData">
+            <RouteView RouteData="@routeData" DefaultLayout="@typeof(FastyBox.Web.Shared.MainLayout)" />
+            <FocusOnNavigate RouteData="@routeData" Selector="h1" />
+        </Found>
+        <NotFound>
+            <PageTitle>Not found</PageTitle>
+            <LayoutView Layout="@typeof(FastyBox.Web.Shared.MainLayout)">
+                <MudContainer Class="mt-16 px-8">
+                    <MudText Typo="Typo.h3" Align="Align.Center" GutterBottom="true">
+                        404 - Page Not Found
+                    </MudText>
+                    <MudText Typo="Typo.body1" Align="Align.Center">
+                        The page you requested could not be found.
+                    </MudText>
+                    <div class="d-flex justify-center mt-8">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" Link="/">Go Home</MudButton>
+                    </div>
+                </MudContainer>
+            </LayoutView>
+        </NotFound>
+    </Router>
+</CascadingAuthenticationState>

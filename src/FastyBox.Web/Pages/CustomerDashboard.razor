@@ -1,0 +1,449 @@
+﻿@inject IStringLocalizer<SharedResource> L
+@inject IShipmentService ShipmentService
+@inject IUserService UserService
+@inject INotificationService NotificationService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<div class="space-y-6">
+    <!-- Welcome Card -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl shadow-soft overflow-hidden">
+        <div class="px-4 py-5 sm:p-6 md:flex md:items-center md:justify-between">
+            <div class="max-w-xl">
+                <h2 class="text-2xl font-bold text-white">@(_greeting) @_user?.FirstName!</h2>
+                <p class="mt-1 text-white text-opacity-80">
+                    @L["Welcome to your dashboard. Here you can manage your shipments and see your package status at a glance."]
+                </p>
+
+                <div class="mt-4">
+                    <button type="button"
+                            @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-primary-600 focus:ring-white">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        @L["New Shipment"]
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-6 flex md:mt-0">
+                <div class="flex-shrink-0 hidden md:block">
+                    <svg class="h-24 w-24 text-white text-opacity-50" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                    </svg>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3">
+        <!-- Active Shipments Card -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-primary-100 dark:bg-primary-900 rounded-md p-3">
+                        <svg class="h-6 w-6 text-primary-600 dark:text-primary-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["Active Shipments"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_activeShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/shipments" class="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                        @L["View all"]
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Awaiting Payment Card -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-yellow-100 dark:bg-yellow-900 rounded-md p-3">
+                        <svg class="h-6 w-6 text-yellow-600 dark:text-yellow-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["Awaiting Payment"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_pendingPaymentShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/shipments?status=AwaitingPayment" class="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                        @L["View all"]
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- In Transit Card -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+            <div class="p-5">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 bg-blue-100 dark:bg-blue-900 rounded-md p-3">
+                        <svg class="h-6 w-6 text-blue-600 dark:text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0" />
+                        </svg>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-gray-500 dark:text-gray-400 truncate">
+                                @L["In Transit"]
+                            </dt>
+                            <dd>
+                                <div class="text-lg font-medium text-gray-900 dark:text-white">
+                                    @_inTransitShipments
+                                </div>
+                            </dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 dark:bg-gray-700 px-5 py-3">
+                <div class="text-sm">
+                    <a href="/shipments?status=InTransit" class="font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                        @L["View all"]
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+        <!-- Recent Shipments -->
+        <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+            <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">@L["Recent Shipments"]</h3>
+                <a href="/shipments" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                    @L["View all"]
+                </a>
+            </div>
+            <div class="border-t border-gray-200 dark:border-gray-700">
+                @if (_isLoading)
+                {
+                    <div class="flex justify-center items-center p-6">
+                        <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+                    </div>
+                }
+                else if (_recentShipments?.Items?.Count > 0)
+                {
+                    <div class="flow-root">
+                        <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                            @foreach (var shipment in _recentShipments.Items)
+                            {
+                                <li class="px-4 py-4 sm:px-6 hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" @onclick="@(() => NavigationManager.NavigateTo($"/shipments/{shipment.Id}"))">
+                                    <div class="flex items-center justify-between">
+                                        <p class="text-sm font-medium text-primary-600 dark:text-primary-400 truncate">
+                                            @shipment.TrackingNumber
+                                        </p>
+                                        <div class="ml-2 flex-shrink-0 flex">
+                                            <ShipmentStatusBadge Status="@shipment.Status" />
+                                        </div>
+                                    </div>
+                                    <div class="mt-2 sm:flex sm:justify-between">
+                                        <div class="sm:flex">
+                                            <p class="flex items-center text-sm text-gray-500 dark:text-gray-400">
+                                                @if (shipment.Type == ShipmentType.Forwarding)
+                                                {
+                                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                                                    </svg>
+                                                    <span>@L["TypeForwarding"]</span>
+                                                }
+                                                else
+                                                {
+                                                    <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                    </svg>
+                                                    <span>@L["TypeCommercialImport"]</span>
+                                                }
+                                            </p>
+                                            <p class="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 sm:mt-0 sm:ml-6">
+                                                <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
+                                                </svg>
+                                                $@shipment.DeclaredValue.ToString("N2")
+                                            </p>
+                                        </div>
+                                        <div class="mt-2 flex items-center text-sm text-gray-500 dark:text-gray-400 sm:mt-0">
+                                            <svg class="flex-shrink-0 mr-1.5 h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <p>
+                                                @shipment.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                                            </p>
+                                        </div>
+                                    </div>
+                                </li>
+                            }
+                        </ul>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-6">
+                        <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                        </svg>
+                        <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["No shipments"]</h3>
+                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                            @L["Start by creating a new shipment."]
+                        </p>
+                        <div class="mt-6">
+                            <button type="button"
+                                    @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))"
+                                    class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                @L["New Shipment"]
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Notifications & US Address -->
+        <div class="space-y-5">
+            <!-- Notifications -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+                <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">@L["Notifications"]</h3>
+                    @if (_notifications?.Count > 0)
+                    {
+                        <button @onclick="MarkAllNotificationsAsRead" class="text-sm font-medium text-primary-600 dark:text-primary-400 hover:text-primary-500">
+                            @L["MarkAllAsRead"]
+                        </button>
+                    }
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700">
+                    @if (_isLoadingNotifications)
+                    {
+                        <div class="flex justify-center items-center p-6">
+                            <div class="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+                        </div>
+                    }
+                    else if (_notifications?.Count > 0)
+                    {
+                        <div class="flow-root max-h-60 overflow-y-auto">
+                            <ul role="list" class="divide-y divide-gray-200 dark:divide-gray-700">
+                                @foreach (var notification in _notifications)
+                                {
+                                    <li class="px-4 py-4 sm:px-6 @(notification.IsRead ? "" : "bg-blue-50 dark:bg-blue-900/10") hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" @onclick="@(() => OpenNotification(notification))">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                @notification.Title
+                                            </p>
+                                            <div class="ml-2 flex-shrink-0 flex">
+                                                <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                    @notification.CreatedAt.ToLocalTime().ToString("MMM dd, HH:mm")
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <p class="mt-1 text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                                            @notification.Message
+                                        </p>
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-6">
+                            <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["No notifications"]</h3>
+                            <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                                @L["You're all caught up!"]
+                            </p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- US Address -->
+            <div class="bg-white dark:bg-gray-800 overflow-hidden shadow-soft rounded-lg">
+                <div class="px-4 py-5 sm:px-6">
+                    <h3 class="text-lg leading-6 font-medium text-gray-900 dark:text-white">@L["Your US Address"]</h3>
+                    <p class="mt-1 max-w-2xl text-sm text-gray-500 dark:text-gray-400">
+                        @L["Use this address when shopping on US websites"]
+                    </p>
+                </div>
+                <div class="border-t border-gray-200 dark:border-gray-700 px-4 py-5 sm:px-6">
+                    @if (string.IsNullOrEmpty(_usAddress))
+                    {
+                        <div class="animate-pulse flex space-x-4">
+                            <div class="flex-1 space-y-4 py-1">
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-5/6"></div>
+                                <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3"></div>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-md">
+                            <p class="whitespace-pre-line text-sm text-gray-700 dark:text-gray-300">@_usAddress</p>
+                        </div>
+                        <div class="mt-4">
+                            <button type="button"
+                                    @onclick="CopyUsAddress"
+                                    class="inline-flex items-center px-3 py-1.5 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg class="-ml-0.5 mr-2 h-4 w-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                </svg>
+                                @L["Copy Address"]
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private PaginatedList<ShipmentBriefDto> _recentShipments;
+    private List<Notification> _notifications;
+    private string _usAddress;
+    private string _userId;
+    private Guid? _tenantId;
+    private ApplicationUser _user;
+    private bool _isLoading = true;
+    private bool _isLoadingNotifications = true;
+
+    // Dashboard statistics
+    private int _activeShipments = 0;
+    private int _pendingPaymentShipments = 0;
+    private int _inTransitShipments = 0;
+
+    // Greeting based on time of day
+    private string _greeting = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await UserService.GetCurrentUserIdAsync();
+        _tenantId = await UserService.GetCurrentTenantIdAsync();
+        _user = await UserService.GetCurrentUserAsync();
+
+        SetGreeting();
+        await LoadData();
+    }
+
+    private void SetGreeting()
+    {
+        var hour = DateTime.Now.Hour;
+
+        if (hour >= 5 && hour < 12)
+            _greeting = L["Good morning,"];
+        else if (hour >= 12 && hour < 18)
+            _greeting = L["Good afternoon,"];
+        else
+            _greeting = L["Good evening,"];
+    }
+
+    private async Task LoadData()
+    {
+        if (!string.IsNullOrEmpty(_userId))
+        {
+            _isLoading = true;
+            _isLoadingNotifications = true;
+
+            try
+            {
+                // Load recent shipments
+                _recentShipments = await ShipmentService.GetUserShipmentsAsync(_userId, 1, 5);
+
+                // Calculate statistics
+                if (_recentShipments != null && _recentShipments.Items != null)
+                {
+                    _activeShipments = _recentShipments.Items.Count(s => s.Status != ShipmentStatus.Delivered &&
+                                                                     s.Status != ShipmentStatus.Cancelled);
+
+                    _pendingPaymentShipments = _recentShipments.Items.Count(s => s.Status == ShipmentStatus.AwaitingPayment);
+
+                    _inTransitShipments = _recentShipments.Items.Count(s => s.Status == ShipmentStatus.InTransit ||
+                                                                      s.Status == ShipmentStatus.InDelivery);
+                }
+
+                // Load notifications
+                _notifications = (await NotificationService.GetUnreadNotificationsAsync(_userId)).ToList();
+
+                // Get US address from tenant settings if available
+                if (_tenantId.HasValue)
+                {
+                    var tenantSettings = await tenantService.GetTenantSettingsAsync(_tenantId.Value);
+                    _usAddress = tenantSettings?.UsAddress;
+
+                    // If tenant doesn't have an address yet, use a default one
+                    if (string.IsNullOrEmpty(_usAddress))
+                    {
+                        _usAddress = $"FastyBox C/O {_user?.FullName}\n123 Main Street, Suite 5\nSan Diego, CA 92154\nUSA\n\nRef: {_user?.Id}";
+                    }
+                }
+            }
+            finally
+            {
+                _isLoading = false;
+                _isLoadingNotifications = false;
+            }
+        }
+    }
+
+    private async Task MarkAllNotificationsAsRead()
+    {
+        await NotificationService.MarkAllAsReadAsync(_userId);
+        _notifications.Clear();
+    }
+
+    private async Task OpenNotification(Notification notification)
+    {
+        if (!notification.IsRead)
+        {
+            await NotificationService.MarkAsReadAsync(notification.Id);
+            notification.ReadAt = DateTime.UtcNow;
+        }
+
+        if (!string.IsNullOrEmpty(notification.TargetUrl))
+        {
+            NavigationManager.NavigateTo(notification.TargetUrl);
+        }
+    }
+
+    private async Task CopyUsAddress()
+    {
+        await JSRuntime.InvokeVoidAsync("navigator.clipboard.writeText", _usAddress);
+        await JSRuntime.InvokeVoidAsync("showToast", L["Address copied to clipboard"], "success");
+    }
+}

@@ -1,0 +1,50 @@
+﻿@namespace FastyBox.Web.Shared.Components
+
+<span class="@GetBadgeClasses()">
+    @ChildContent
+</span>
+
+@code {
+    [Parameter]
+    public string Color { get; set; } = "primary";
+
+    [Parameter]
+    public string Size { get; set; } = "md";
+
+    [Parameter]
+    public string Class { get; set; }
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    private string GetBadgeClasses()
+    {
+        var classes = "badge ";
+
+        classes += Color switch
+        {
+            "primary" => "badge-primary ",
+            "secondary" => "badge-secondary ",
+            "success" => "badge-success ",
+            "danger" => "badge-danger ",
+            "warning" => "badge-warning ",
+            "info" => "badge-info ",
+            _ => "badge-primary "
+        };
+
+        classes += Size switch
+        {
+            "sm" => "px-1.5 py-0.5 text-xs ",
+            "md" => "", // default size
+            "lg" => "px-3 py-0.5 text-sm ",
+            _ => ""
+        };
+
+        if (!string.IsNullOrEmpty(Class))
+        {
+            classes += $"{Class} ";
+        }
+
+        return classes.TrimEnd();
+    }
+}

@@ -1,0 +1,144 @@
+﻿@page "/admin/settings"
+@using FastyBox.Domain.Entities
+@attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
+@inject IStringLocalizer<SharedResource> L
+@inject ITenantService TenantService
+@inject IUserService UserService
+@inject ISnackbar Snackbar
+
+<PageTitle>@L["TenantSettings"] - @L["Admin"] - @L["AppName"]</PageTitle>
+
+    <MudContainer MaxWidth="MaxWidth.Large">
+        <MudGrid>
+            <MudItem xs="12">
+                <MudText Typo="Typo.h4" Class="mb-4">@L["TenantSettings"]</MudText>
+            </MudItem>
+
+            <MudItem xs="12">
+                <MudPaper Class="pa-4">
+                    @if (_isLoading)
+                {
+                    <div class="d-flex justify-center">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    </div>
+                }
+                else if (_settings != null)
+                {
+                    <MudForm @ref="_form" @bind-IsValid="@_isValid" Model="@_settings">
+                        <MudGrid>
+                            <MudItem xs="12" md="6">
+                                <MudNumericField T="decimal" Label="@L["ProfitMargin"]" @bind-Value="_settings.ProfitMarginPercentage" Required="true"
+                                                 RequiredError="@L["ErrorFieldRequired"]" Min="0" Max="100" Format="N2"
+                                                 Adornment="Adornment.End" AdornmentText="%" AdornmentColor="Color.Secondary" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="@L["UsAddress"]" @bind-Value="_settings.UsAddress" Required="true"
+                                              RequiredError="@L["ErrorFieldRequired"]" Lines="3" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="@L["StripeApiKey"]" @bind-Value="_settings.StripeApiKey" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudTextField T="string" Label="@L["StripeWebhookSecret"]" @bind-Value="_settings.StripeWebhookSecret" />
+                            </MudItem>
+
+                            <MudItem xs="12">
+                                <MudCheckBox T="bool" @bind-Value="_settings.EnableAiIntegration" Label="@L["EnableAiIntegration"]" Color="Color.Primary" />
+                            </MudItem>
+
+
+                            @if (_settings.EnableAiIntegration)
+                            {
+                                <MudItem xs="12">
+                                    <MudTextField T="string" Label="@L["OpenAiApiKey"]" @bind-Value="_settings.OpenAiApiKey" />
+                                </MudItem>
+                            }
+
+                            <MudItem xs="12" Class="d-flex justify-end mt-4">
+                                <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveSettings"
+                                           Disabled="@(!_isValid || _isSaving)">
+                                    @if (_isSaving)
+                                    {
+                                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                                        <MudText Class="ms-2">@L["Saving"]</MudText>
+                                    }
+                                    else
+                                    {
+                                        @L["Save"]
+                                    }
+                                </MudButton>
+                            </MudItem>
+                        </MudGrid>
+                    </MudForm>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Error">@L["Unable to load tenant settings."]</MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private MudForm _form;
+    private bool _isValid;
+    private bool _isLoading = true;
+    private bool _isSaving;
+    private TenantSettings _settings;
+    private Guid? _tenantId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tenantId = await UserService.GetCurrentTenantIdAsync();
+        await LoadSettingsAsync();
+    }
+
+    private async Task LoadSettingsAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            if (_tenantId.HasValue)
+            {
+                _settings = await TenantService.GetTenantSettingsAsync(_tenantId.Value);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error loading tenant settings: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SaveSettings()
+    {
+        if (!_isValid || _settings == null)
+        {
+            return;
+        }
+
+        _isSaving = true;
+
+        try
+        {
+            await TenantService.UpdateTenantSettingsAsync(_settings);
+            Snackbar.Add(L["Settings saved successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error saving settings: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+        }
+    }
+}

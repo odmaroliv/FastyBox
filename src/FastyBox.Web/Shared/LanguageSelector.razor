@@ -1,0 +1,52 @@
+﻿@using System.Globalization
+@inject NavigationManager NavigationManager
+@inject IStringLocalizer<SharedResource> L
+
+<div class="relative">
+    <button @onclick="ToggleMenu" type="button" class="flex items-center text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+        </svg>
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-soft-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+            <div class="py-1" role="none">
+                <button @onclick="() => ChangeLanguage('en-US')" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                    @L["English"]
+                </button>
+                <button @onclick="() => ChangeLanguage('es-MX')" class="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700" role="menuitem">
+                    @L["Spanish"]
+                </button>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isOpen = false;
+
+    private void ToggleMenu()
+    {
+        _isOpen = !_isOpen;
+    }
+
+    private void ChangeLanguage(string culture)
+    {
+        _isOpen = false;
+
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        query["culture"] = culture;
+
+        var newQueryString = query.ToString();
+        var uriBuilder = new UriBuilder(uri)
+            {
+                Query = newQueryString
+            };
+
+        NavigationManager.NavigateTo(uriBuilder.Uri.ToString(), forceLoad: true);
+    }
+}

@@ -1,0 +1,137 @@
+﻿@inject IStringLocalizer<SharedResource> L
+@inject INotificationService NotificationService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@implements IDisposable
+
+<div class="relative">
+    <button @onclick="ToggleMenu" type="button" class="relative p-1 rounded-full text-gray-500 dark:text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+        </svg>
+
+        @if (_unreadCount > 0)
+        {
+            <span class="absolute top-0 right-0 block h-2 w-2 rounded-full bg-red-500 ring-2 ring-white dark:ring-gray-800"></span>
+        }
+    </button>
+
+    @if (_isOpen)
+    {
+        <div class="origin-top-right absolute right-0 mt-2 w-80 max-h-96 overflow-y-auto rounded-md shadow-soft-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
+            <div class="p-2" role="none">
+                <div class="flex justify-between items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700">
+                    <h3 class="text-sm font-medium text-gray-900 dark:text-white">@L["Notifications"]</h3>
+
+                    @if (_unreadCount > 0)
+                    {
+                        <button @onclick="MarkAllAsRead" class="text-xs font-medium text-primary-600 dark:text-primary-500 hover:text-primary-700 dark:hover:text-primary-400">
+                            @L["MarkAllAsRead"]
+                        </button>
+                    }
+                </div>
+
+                <div class="mt-1">
+                    @if (_notifications.Any())
+                    {
+                        @foreach (var notification in _notifications)
+                        {
+                            <div @onclick="() => OpenNotification(notification)" class="@(notification.IsRead ? "bg-white dark:bg-gray-800" : "bg-blue-50 dark:bg-blue-900/10") px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md cursor-pointer">
+                                <div class="flex justify-between items-start">
+                                    <p class="text-sm font-medium text-gray-900 dark:text-white">@notification.Title</p>
+                                    <span class="text-xs text-gray-500 dark:text-gray-400">@notification.CreatedAt.ToLocalTime().ToShortTimeString()</span>
+                                </div>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 line-clamp-2">@notification.Message</p>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <div class="px-3 py-6 text-center">
+                            <p class="text-sm text-gray-500 dark:text-gray-400">@L["NoNotifications"]</p>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private bool _isOpen = false;
+    private List<Notification> _notifications = new();
+    private int _unreadCount = 0;
+    private string _userId;
+    private HubConnection _hubConnection;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await UserService.GetCurrentUserIdAsync();
+        if (!string.IsNullOrEmpty(_userId))
+        {
+            await LoadNotificationsAsync();
+            await SetupSignalRConnection();
+        }
+    }
+
+    private async Task LoadNotificationsAsync()
+    {
+        var notifications = await NotificationService.GetUnreadNotificationsAsync(_userId);
+        _notifications = notifications.ToList();
+        _unreadCount = _notifications.Count;
+    }
+
+    private async Task SetupSignalRConnection()
+    {
+        _hubConnection = new HubConnectionBuilder()
+            .WithUrl(NavigationManager.ToAbsoluteUri("/notificationHub"))
+            .Build();
+
+        _hubConnection.On<Notification>("ReceiveNotification", notification =>
+        {
+            if (notification.UserId == _userId)
+            {
+                _notifications.Insert(0, notification);
+                _unreadCount++;
+                StateHasChanged();
+            }
+        });
+
+        await _hubConnection.StartAsync();
+    }
+
+    private void ToggleMenu()
+    {
+        _isOpen = !_isOpen;
+    }
+
+    private async Task MarkAllAsRead()
+    {
+        await NotificationService.MarkAllAsReadAsync(_userId);
+        await LoadNotificationsAsync();
+        _isOpen = false;
+    }
+
+    private async Task OpenNotification(Notification notification)
+    {
+        _isOpen = false;
+
+        if (!notification.IsRead)
+        {
+            await NotificationService.MarkAsReadAsync(notification.Id);
+        }
+
+        if (!string.IsNullOrEmpty(notification.TargetUrl))
+        {
+            NavigationManager.NavigateTo(notification.TargetUrl);
+        }
+    }
+
+    public void Dispose()
+    {
+        if (_hubConnection is not null)
+        {
+            _hubConnection.DisposeAsync();
+        }
+    }
+}

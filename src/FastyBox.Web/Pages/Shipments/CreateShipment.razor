@@ -1,0 +1,557 @@
+﻿@page "/shipments/new"
+@inject IStringLocalizer<SharedResource> L
+@inject IShipmentService ShipmentService
+@inject IUserService UserService
+@inject IPricingService PricingService
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<PageTitle>@L["NewShipment"] - @L["AppName"]</PageTitle>
+
+<div class="space-y-6">
+    <div class="flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@L["NewShipment"]</h1>
+        <button
+            type="button"
+            @onclick="@(() => NavigationManager.NavigateTo("/shipments"))"
+            class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+            @L["Back"]
+        </button>
+    </div>
+
+    <div class="bg-white dark:bg-gray-800 shadow-soft rounded-lg overflow-hidden">
+        <div class="p-6 space-y-6">
+            <div class="border-b border-gray-200 dark:border-gray-700">
+                <nav class="-mb-px flex space-x-8">
+                    <button
+                        @onclick="@(() => _activeTab = 0)"
+                        class="@(_activeTab == 0 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        @L["ShipmentDetails"]
+                    </button>
+                    <button
+                        @onclick="@(() => _activeTab = 1)"
+                        class="@(_activeTab == 1 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        @L["Items"]
+                    </button>
+                    <button
+                        @onclick="@(() => _activeTab = 2)"
+                        class="@(_activeTab == 2 ? "border-primary-500 text-primary-600 dark:text-primary-500" : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600") whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm">
+                        @L["Review"]
+                    </button>
+                </nav>
+            </div>
+
+            <div class="mt-6">
+                @if (_activeTab == 0)
+                {
+                    <!-- Shipment Details Tab -->
+                    <div class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Type"]</label>
+                            <div class="mt-1">
+                                <div class="space-y-4 sm:flex sm:items-center sm:space-y-0 sm:space-x-10">
+                                    <div class="flex items-center">
+                                        <input id="type-forwarding" name="shipment-type" type="radio" checked="@(_model.Type == ShipmentType.Forwarding)" @onchange="@(() => _model.Type = ShipmentType.Forwarding)" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                                        <label for="type-forwarding" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            @L["TypeForwarding"]
+                                        </label>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <input id="type-import" name="shipment-type" type="radio" checked="@(_model.Type == ShipmentType.CommercialImport)" @onchange="@(() => _model.Type = ShipmentType.CommercialImport)" class="focus:ring-primary-500 h-4 w-4 text-primary-600 border-gray-300 dark:border-gray-600 dark:bg-gray-700">
+                                        <label for="type-import" class="ml-3 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                                            @L["TypeCommercialImport"]
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="description" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Description"]</label>
+                            <div class="mt-1">
+                                <textarea id="description" rows="3" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="_model.Description"></textarea>
+                                @if (string.IsNullOrWhiteSpace(_model.Description) && _descriptionTouched)
+                                {
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                }
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">@L["Brief description of what you're shipping"]</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                            <div>
+                                <label for="declared-value" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["DeclaredValue"]</label>
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                    </div>
+                                    <input type="text" id="declared-value" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind="_model.DeclaredValue" @oninput="OnDeclaredValueChange" @onblur="OnDeclaredValueBlur">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">USD</span>
+                                    </div>
+                                </div>
+                                @if (_model.DeclaredValue <= 0 && _declaredValueTouched)
+                                {
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                }
+                            </div>
+
+                            <div>
+                                <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Weight"]</label>
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <input type="text" id="weight" class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="0.00" @bind="_model.Weight" @oninput="OnWeightChange" @onblur="OnWeightBlur">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 dark:text-gray-400 sm:text-sm">kg</span>
+                                    </div>
+                                </div>
+                                @if (_model.Weight <= 0 && _weightTouched)
+                                {
+                                    <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                }
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="customer-notes" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["CustomerNotes"]</label>
+                            <div class="mt-1">
+                                <textarea id="customer-notes" rows="3" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="_model.CustomerNotes"></textarea>
+                            </div>
+                            <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">@L["Additional instructions or information for this shipment"]</p>
+                        </div>
+                    </div>
+                }
+                else if (_activeTab == 1)
+                {
+                    <!-- Items Tab -->
+                    <div class="space-y-6">
+                        @if (_model.Items.Count > 0)
+                        {
+                            @foreach (var item in _model.Items)
+                            {
+                                <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                                    <div class="flex justify-between items-start">
+                                        <div class="flex-1">
+                                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-3">
+                                                <div class="sm:col-span-3">
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Name"]</label>
+                                                    <div class="mt-1">
+                                                        <input type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Name">
+                                                        @if (string.IsNullOrWhiteSpace(item.Name) && _itemsValidated)
+                                                        {
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div class="sm:col-span-3">
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["ProductURL"]</label>
+                                                    <div class="mt-1">
+                                                        <input type="text" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Url">
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Quantity"]</label>
+                                                    <div class="mt-1">
+                                                        <input type="number" min="1" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Quantity" @onchange="@(() => UpdateItemTotalPrice(item))">
+                                                        @if (item.Quantity <= 0 && _itemsValidated)
+                                                        {
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["UnitPrice"]</label>
+                                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">$</span>
+                                                        </div>
+                                                        <input type="text" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-7 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.UnitPrice" @onchange="@(() => UpdateItemTotalPrice(item))">
+                                                        @if (item.UnitPrice <= 0 && _itemsValidated)
+                                                        {
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div>
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Weight"]</label>
+                                                    <div class="mt-1 relative rounded-md shadow-sm">
+                                                        <input type="text" class="focus:ring-primary-500 focus:border-primary-500 block w-full pr-10 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Weight">
+                                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                                            <span class="text-gray-500 dark:text-gray-400 sm:text-sm">kg</span>
+                                                        </div>
+                                                        @if (item.Weight <= 0 && _itemsValidated)
+                                                        {
+                                                            <p class="mt-1 text-sm text-red-600 dark:text-red-500">@L["ErrorFieldRequired"]</p>
+                                                        }
+                                                    </div>
+                                                </div>
+
+                                                <div class="sm:col-span-3">
+                                                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Description"]</label>
+                                                    <div class="mt-1">
+                                                        <textarea rows="2" class="shadow-sm focus:ring-primary-500 focus:border-primary-500 block w-full sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" @bind="item.Description"></textarea>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="ml-4">
+                                            <button type="button" @onclick="@(() => RemoveItem(item))" class="text-red-600 dark:text-red-500 hover:text-red-900 dark:hover:text-red-400">
+                                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+                        }
+
+                        <div>
+                            <button
+                                type="button"
+                                @onclick="AddItem"
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                @L["Add Item"]
+                            </button>
+                        </div>
+                    </div>
+                }
+                else if (_activeTab == 2)
+                {
+                    <!-- Review Tab -->
+                    <div class="space-y-6">
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">@L["ShipmentDetails"]</h3>
+                            <div class="mt-4 grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Type"]</h4>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">@(_model.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["DeclaredValue"]</h4>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">$@_model.DeclaredValue.ToString("N2")</p>
+                                </div>
+                                
+                                <div>
+                                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Weight"]</h4>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">@_model.Weight kg</p>
+                                </div>
+                                
+                                <div class="sm:col-span-2">
+                                    <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["Description"]</h4>
+                                    <p class="mt-1 text-sm text-gray-900 dark:text-white">@_model.Description</p>
+                                </div>
+                                
+                                @if (!string.IsNullOrEmpty(_model.CustomerNotes))
+                                {
+                                    <div class="sm:col-span-2">
+                                        <h4 class="text-sm font-medium text-gray-500 dark:text-gray-400">@L["CustomerNotes"]</h4>
+                                        <p class="mt-1 text-sm text-gray-900 dark:text-white">@_model.CustomerNotes</p>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">@L["Items"]</h3>
+                            <div class="mt-4 flow-root">
+                                <div class="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+                                    <div class="inline-block min-w-full py-2 align-middle sm:px-6 lg:px-8">
+                                        <table class="min-w-full divide-y divide-gray-300 dark:divide-gray-600">
+                                            <thead>
+                                                <tr>
+                                                    <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">@L["Name"]</th>
+                                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">@L["Quantity"]</th>
+                                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">@L["UnitPrice"]</th>
+                                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">@L["TotalPrice"]</th>
+                                                    <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-gray-900 dark:text-white">@L["Weight"]</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
+                                                @foreach (var item in _model.Items)
+                                                {
+                                                    <tr>
+                                                        <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-gray-900 dark:text-white sm:pl-0">@item.Name</td>
+                                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">@item.Quantity</td>
+                                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">$@item.UnitPrice.ToString("N2")</td>
+                                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">$@((item.UnitPrice * item.Quantity).ToString("N2"))</td>
+                                                        <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">@item.Weight kg</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                            <tfoot>
+                                                <tr>
+                                                    <th scope="row" colspan="3" class="pl-4 pr-3 pt-4 text-right text-sm font-semibold text-gray-900 dark:text-white sm:pl-0">@L["Total"]</th>
+                                                    <td class="whitespace-nowrap px-3 pt-4 text-sm font-semibold text-gray-900 dark:text-white">$@(_model.Items.Sum(i => i.UnitPrice * i.Quantity).ToString("N2"))</td>
+                                                    <td class="whitespace-nowrap px-3 pt-4 text-sm font-semibold text-gray-900 dark:text-white">@(_model.Items.Sum(i => i.Weight * i.Quantity).ToString("N2")) kg</td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+                            <h3 class="text-lg font-medium text-gray-900 dark:text-white">@L["RequiredDocuments"]</h3>
+                            <div class="mt-4">
+                                <p class="text-sm text-gray-500 dark:text-gray-400">@L["After creating your shipment, you'll need to upload the following documents:"]</p>
+                                <ul class="mt-2 list-disc list-inside text-sm text-gray-500 dark:text-gray-400">
+                                    <li>@L["Invoice"]</li>
+                                    <li>@L["PaymentProof"]</li>
+                                    <li>@L["ProductImage"]</li>
+                                    @if (_model.Type == ShipmentType.CommercialImport)
+                                    {
+                                        <li>@L["CustomsDeclaration"]</li>
+                                    }
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                }
+
+                <div class="pt-6 flex items-center justify-between border-t border-gray-200 dark:border-gray-700">
+                    <div>
+                        @if (_activeTab > 0)
+                        {
+                            <button
+                                type="button"
+                                @onclick="@(() => _activeTab--)"
+                                class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                <svg class="-ml-1 mr-2 h-5 w-5 text-gray-500 dark:text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                </svg>
+                                @L["Previous"]
+                            </button>
+                        }
+                    </div>
+
+                    <div>
+                        @if (_activeTab < 2)
+                        {
+                            <button
+                                type="button"
+                                @onclick="NextTab"
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                @L["Next"]
+                                <svg class="ml-2 -mr-1 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        }
+                        else
+                        {
+                            <button
+                                type="button"
+                                @onclick="SubmitShipment"
+                                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                                @if (_isSubmitting)
+                                {
+                                    <svg class="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    @L["Creating..."]
+                                }
+                                else
+                                {
+                                    @L["Create Shipment"]
+                                }
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private int _activeTab = 0;
+    private bool _isSubmitting = false;
+    private string _userId;
+    private Guid? _tenantId;
+    
+    // Form validation
+    private bool _descriptionTouched = false;
+    private bool _declaredValueTouched = false;
+    private bool _weightTouched = false;
+    private bool _itemsValidated = false;
+    
+    private CreateShipmentCommand _model = new()
+    {
+        Type = ShipmentType.Forwarding,
+        Items = new List<ShipmentItemDto>()
+    };
+    
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await UserService.GetCurrentUserIdAsync();
+        _tenantId = await UserService.GetCurrentTenantIdAsync();
+        
+        if (!string.IsNullOrEmpty(_userId) && _tenantId.HasValue)
+        {
+            _model.UserId = _userId;
+            _model.TenantId = _tenantId.Value;
+        }
+        
+        // Add an initial empty item
+        AddItem();
+    }
+    
+    private void AddItem()
+    {
+        var item = new ShipmentItemDto
+        {
+            Name = "",
+            Description = "",
+            Url = "",
+            Quantity = 1,
+            UnitPrice = 0,
+            Weight = 0
+        };
+        
+        _model.Items.Add(item);
+    }
+    
+    private void RemoveItem(ShipmentItemDto item)
+    {
+        _model.Items.Remove(item);
+        
+        if (_model.Items.Count == 0)
+        {
+            AddItem();
+        }
+    }
+    
+    private void UpdateItemTotalPrice(ShipmentItemDto item)
+    {
+        // TotalPrice will be calculated automatically
+    }
+    
+    private void OnDeclaredValueChange(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal value))
+        {
+            _model.DeclaredValue = value;
+        }
+    }
+    
+    private void OnDeclaredValueBlur()
+    {
+        _declaredValueTouched = true;
+    }
+    
+    private void OnWeightChange(ChangeEventArgs e)
+    {
+        if (decimal.TryParse(e.Value?.ToString(), out decimal value))
+        {
+            _model.Weight = value;
+        }
+    }
+    
+    private void OnWeightBlur()
+    {
+        _weightTouched = true;
+    }
+    
+    private void NextTab()
+    {
+        if (_activeTab == 0)
+        {
+            // Validate shipment details
+            _descriptionTouched = true;
+            _declaredValueTouched = true;
+            _weightTouched = true;
+            
+            if (string.IsNullOrWhiteSpace(_model.Description) || _model.DeclaredValue <= 0 || _model.Weight <= 0)
+            {
+                // Show validation error via toast
+                JSRuntime.InvokeVoidAsync("showToast", L["Please fill in all required fields"], "error");
+                return;
+            }
+        }
+        else if (_activeTab == 1)
+        {
+            // Validate items
+            _itemsValidated = true;
+            
+            if (_model.Items.Any(i => string.IsNullOrWhiteSpace(i.Name) || i.Quantity <= 0 || i.UnitPrice <= 0 || i.Weight <= 0))
+            {
+                // Show validation error via toast
+                JSRuntime.InvokeVoidAsync("showToast", L["Please complete all item details"], "error");
+                return;
+            }
+            
+            // Update total weight and declared value based on items if they're zero
+            if (_model.Weight <= 0)
+            {
+                _model.Weight = _model.Items.Sum(i => i.Weight * i.Quantity);
+            }
+            
+            if (_model.DeclaredValue <= 0)
+            {
+                _model.DeclaredValue = _model.Items.Sum(i => i.UnitPrice * i.Quantity);
+            }
+        }
+        
+        _activeTab++;
+    }
+    
+    private async Task SubmitShipment()
+    {
+        _isSubmitting = true;
+        
+        try
+        {
+            // Final validation
+            if (string.IsNullOrWhiteSpace(_model.Description) || _model.DeclaredValue <= 0 || _model.Weight <= 0)
+            {
+                await JSRuntime.InvokeVoidAsync("showToast", L["Please complete shipment details"], "error");
+                _activeTab = 0;
+                return;
+            }
+            
+            if (_model.Items.Any(i => string.IsNullOrWhiteSpace(i.Name) || i.Quantity <= 0 || i.UnitPrice <= 0 || i.Weight <= 0))
+            {
+                await JSRuntime.InvokeVoidAsync("showToast", L["Please complete all item details"], "error");
+                _activeTab = 1;
+                return;
+            }
+            
+            // Calculate total weight based on items if not provided
+            if (_model.Weight <= 0 && _model.Items.Count > 0)
+            {
+                _model.Weight = _model.Items.Sum(i => i.Weight * i.Quantity);
+            }
+            
+            // Calculate total declared value if not provided
+            if (_model.DeclaredValue <= 0 && _model.Items.Count > 0)
+            {
+                _model.DeclaredValue = _model.Items.Sum(i => i.UnitPrice * i.Quantity);
+            }
+            
+            var shipmentId = await ShipmentService.CreateShipmentAsync(_model);
+            await JSRuntime.InvokeVoidAsync("showToast", L["Shipment created successfully"], "success");
+            NavigationManager.NavigateTo($"/shipments/{shipmentId}");
+        }
+        catch (Exception ex)
+        {
+            await JSRuntime.InvokeVoidAsync("showToast", L["Error creating shipment: "] + ex.Message, "error");
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

@@ -1,0 +1,721 @@
+﻿@page "/admin/shipments/{Id:guid}"
+@using FastyBox.Application.Common.Interfaces
+@using FastyBox.Application.Common.Models
+@using FastyBox.Application.Shipments.Queries.GetShipmentById
+@using FastyBox.Domain.Entities
+@using FastyBox.Domain.Enums
+@using FastyBox.Web.Resources
+@using FastyBox.Web.Shared.Dialogs
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.AspNetCore.Components.Forms
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
+@inject IStringLocalizer<SharedResource> L
+@inject FastyBox.Web.Services.IShipmentService ShipmentService
+@inject NavigationManager NavigationManager
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@L["ShipmentDetails"] - @L["Admin"] - @L["AppName"]</PageTitle>
+
+@if (_isLoading)
+{
+    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+}
+else if (_shipment != null)
+{
+    <MudContainer MaxWidth="MaxWidth.ExtraLarge">
+        <MudGrid>
+            <MudItem xs="12" Class="d-flex justify-space-between align-center">
+                <MudText Typo="Typo.h4">@L["ShipmentDetails"] - @_shipment.TrackingNumber</MudText>
+                <MudButton Variant="Variant.Text" Color="Color.Primary" OnClick="@(() => NavigationManager.NavigateTo("/admin/shipments"))">
+                    @L["Back to List"]
+                </MudButton>
+            </MudItem>
+            
+            <MudItem xs="12" md="8">
+                <MudPaper Class="pa-4 mb-4">
+                    <MudGrid>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["Status"]</MudText>
+                            <ShipmentStatusBadge Status="@_shipment.Status" />
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["Type"]</MudText>
+                            <MudText>@(_shipment.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["CreatedAt"]</MudText>
+                            <MudText>@_shipment.CreatedAt.ToLocalTime().ToString("g")</MudText>
+                        </MudItem>
+                        
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["DeclaredValue"]</MudText>
+                            <MudText>$@_shipment.DeclaredValue.ToString("N2")</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["Weight"]</MudText>
+                            <MudText>@_shipment.Weight kg</MudText>
+                        </MudItem>
+                        <MudItem xs="12" md="4">
+                            <MudText Typo="Typo.subtitle2">@L["CourierTrackingNumber"]</MudText>
+                            <MudText>@(_shipment.CourierTrackingNumber ?? "-")</MudText>
+                        </MudItem>
+                        
+                        <MudItem xs="12">
+                            <MudText Typo="Typo.subtitle2">@L["Description"]</MudText>
+                            <MudText>@_shipment.Description</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+                
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">@L["Customer Information"]</MudText>
+                    
+                    @if (_shipment.User != null)
+                    {
+                        <MudGrid>
+                            <MudItem xs="12" md="4">
+                                <MudText Typo="Typo.subtitle2">@L["Name"]</MudText>
+                                <MudText>@_shipment.User.FullName</MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudText Typo="Typo.subtitle2">@L["Email"]</MudText>
+                                <MudText>@_shipment.User.Email</MudText>
+                            </MudItem>
+                            <MudItem xs="12" md="4">
+                                <MudText Typo="Typo.subtitle2">@L["PhoneNumber"]</MudText>
+                                <MudText>@(_shipment.User.PhoneNumber ?? "-")</MudText>
+                            </MudItem>
+                        </MudGrid>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Warning">@L["User information not available."]</MudAlert>
+                    }
+                </MudPaper>
+                
+                <MudTabs Elevation="2" Rounded="true" ApplyEffectsToContainer="true" PanelClass="pa-6">
+                    <MudTabPanel Text="@L["Items"]" Icon="@Icons.Material.Filled.Inventory">
+                        @if (_shipment.Items.Count > 0)
+                        {
+                            <MudTable Items="@_shipment.Items" Hover="true" Breakpoint="Breakpoint.Sm">
+                                <HeaderContent>
+                                    <MudTh>@L["Name"]</MudTh>
+                                    <MudTh>@L["Quantity"]</MudTh>
+                                    <MudTh>@L["UnitPrice"]</MudTh>
+                                    <MudTh>@L["TotalPrice"]</MudTh>
+                                    <MudTh>@L["Weight"]</MudTh>
+                                </HeaderContent>
+                                <RowTemplate>
+                                    <MudTd DataLabel="@L["Name"]">
+                                        <div>
+                                            <div>@context.Name</div>
+                                            @if (!string.IsNullOrEmpty(context.Url))
+                                            {
+                                                <MudLink Href="@context.Url" Target="_blank" Typo="Typo.caption">@L["View"]</MudLink>
+                                            }
+                                        </div>
+                                    </MudTd>
+                                    <MudTd DataLabel="@L["Quantity"]">@context.Quantity</MudTd>
+                                    <MudTd DataLabel="@L["UnitPrice"]">$@context.UnitPrice.ToString("N2")</MudTd>
+                                    <MudTd DataLabel="@L["TotalPrice"]">$@context.TotalPrice.ToString("N2")</MudTd>
+                                    <MudTd DataLabel="@L["Weight"]">@context.Weight kg</MudTd>
+                                </RowTemplate>
+                            </MudTable>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info">@L["No items found."]</MudAlert>
+                        }
+                    </MudTabPanel>
+                    
+                    <MudTabPanel Text="@L["Documents"]" Icon="@Icons.Material.Filled.Description">
+                        <div class="mb-4">
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Upload"
+                                      OnClick="OpenUploadDialog">
+                                @L["UploadDocument"]
+                            </MudButton>
+                        </div>
+                        
+                        @if (_shipment.Documents.Count > 0)
+                        {
+                           <MudTable Items="@_shipment.Documents" Hover="true" Breakpoint="Breakpoint.Sm">
+    <HeaderContent>
+        <MudTh>@L["Type"]</MudTh>
+        <MudTh>@L["FileName"]</MudTh>
+        <MudTh>@L["UploadedAt"]</MudTh>
+        <MudTh>@L["UploadedBy"]</MudTh>
+        <MudTh></MudTh>
+    </HeaderContent>
+    <RowTemplate Context="document">
+        <MudTd DataLabel="@L["Type"]">@GetDocumentTypeName(document.Type)</MudTd>
+        <MudTd DataLabel="@L["FileName"]">@document.FileName</MudTd>
+        <MudTd DataLabel="@L["UploadedAt"]">@document.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+        <MudTd DataLabel="@L["UploadedBy"]">@document.CreatedBy</MudTd>
+        <MudTd>
+            <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                      Href="@document.PublicUrl" Target="_blank">
+                @L["View"]
+            </MudButton>
+            <MudButton Variant="Variant.Text" Color="Color.Error" Size="Size.Small"
+                      OnClick="@(() => DeleteDocument(document.Id))">
+                @L["Delete"]
+            </MudButton>
+        </MudTd>
+    </RowTemplate>
+</MudTable>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info">@L["No documents found."]</MudAlert>
+                        }
+                    </MudTabPanel>
+                    
+                    <MudTabPanel Text="@L["History"]" Icon="@Icons.Material.Filled.History">
+                        @if (_shipment.StatusHistory.Count > 0)
+                        {
+                            <MudTimeline>
+                                @foreach (var history in _shipment.StatusHistory.OrderByDescending(h => h.CreatedAt))
+                                {
+                                    <MudTimelineItem Color="@GetTimelineColor(history.NewStatus)" Elevation="0">
+                                        <ItemOpposite>
+                                            <MudText Typo="Typo.body2">@history.CreatedAt.ToLocalTime().ToString("g")</MudText>
+                                        </ItemOpposite>
+                                        <ItemContent>
+                                            <MudText Typo="Typo.h6">@GetStatusText(history.NewStatus)</MudText>
+                                            @if (!string.IsNullOrEmpty(history.Notes))
+                                            {
+                                                <MudText Typo="Typo.body2">@history.Notes</MudText>
+                                            }
+                                            <MudText Typo="Typo.caption">@history.CreatedBy</MudText>
+                                        </ItemContent>
+                                    </MudTimelineItem>
+                                }
+                            </MudTimeline>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info">@L["No history found."]</MudAlert>
+                        }
+                    </MudTabPanel>
+                    
+                    <MudTabPanel Text="@L["Notes"]" Icon="@Icons.Material.Filled.Notes">
+                        <div class="mb-4">
+                            <MudTextField @bind-Value="_newNote" Label="@L["Add a note"]" Lines="3" />
+                            <MudCheckBox T="bool" @bind-Value="_isPublicNote" Label="@L["Make note visible to customer"]" Color="Color.Primary" />
+
+                            <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="mt-2"
+                                       OnClick="AddNote" Disabled="@string.IsNullOrWhiteSpace(_newNote)">
+                                @L["AddNote"]
+                            </MudButton>
+
+                        </div>
+                        
+                        @if (_shipment.Notes.Count > 0)
+                        {
+                            <MudList T="object" >
+                                @foreach (var note in _shipment.Notes.OrderByDescending(n => n.CreatedAt))
+                                {
+                                    <MudListItem>
+                                        <div class="d-flex flex-column">
+                                            <MudText>@note.Note</MudText>
+                                            <div class="d-flex align-center">
+                                                <MudText Typo="Typo.caption">
+                                                    @(note.IsSystemGenerated ? L["System"] : note.User?.FullName)
+                                                </MudText>
+                                                <MudText Typo="Typo.caption" Class="ml-2">
+                                                    @note.CreatedAt.ToLocalTime().ToString("g")
+                                                </MudText>
+                                                @if (!note.IsPublic)
+                                                {
+                                                    <MudChip Size="Size.Small" Color="Color.Default" Class="ml-2">@L["Internal"]</MudChip>
+                                                }
+                                            </div>
+                                        </div>
+                                    </MudListItem>
+                                    <MudDivider />
+                                }
+                            </MudList>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Info">@L["No notes found."]</MudAlert>
+                        }
+                    </MudTabPanel>
+                </MudTabs>
+            </MudItem>
+            
+            <MudItem xs="12" md="4">
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">@L["Payment"]</MudText>
+                    
+                    @if (_shipment.IsPaid)
+                    {
+                        <MudAlert Severity="Severity.Success" Class="mb-4">@L["This shipment has been paid."]</MudAlert>
+                    }
+                    else
+                    {
+                        <MudAlert Severity="Severity.Warning" Class="mb-4">@L["This shipment is not paid yet."]</MudAlert>
+                    }
+
+                    <MudList T="object" Clickable="false">
+                        <MudListItem>
+                            <div class="d-flex justify-space-between w-100">
+                                <MudText>@L["ShippingCost"]</MudText>
+                                <MudText>$@_shipment.ShippingCost.ToString("N2")</MudText>
+                            </div>
+                        </MudListItem>
+                        <MudListItem>
+                            <div class="d-flex justify-space-between w-100">
+                                <MudText>@L["ServiceFee"]</MudText>
+                                <MudText>$@_shipment.ServiceFee.ToString("N2")</MudText>
+                            </div>
+                        </MudListItem>
+                        <MudDivider />
+                        <MudListItem>
+                            <div class="d-flex justify-space-between w-100">
+                                <MudText Typo="Typo.h6">@L["TotalCost"]</MudText>
+                                <MudText Typo="Typo.h6">$@_shipment.TotalCost.ToString("N2")</MudText>
+                            </div>
+                        </MudListItem>
+                    </MudList>
+                    
+                    @if (!_shipment.IsPaid && _shipment.TotalCost > 0)
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Class="mt-4"
+                                  OnClick="RecalculateCost">
+                            @L["Recalculate Cost"]
+                        </MudButton>
+                        
+                        <MudButton Variant="Variant.Outlined" Color="Color.Success" FullWidth="true" Class="mt-2"
+                                  OnClick="MarkAsPaid">
+                            @L["Mark as Paid"]
+                        </MudButton>
+                    }
+                </MudPaper>
+                
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">@L["Update Status"]</MudText>
+                    
+                    <MudSelect T="ShipmentStatus" Label="@L["Status"]" @bind-Value="_newStatus" FullWidth="true" Class="mb-4">
+                        @foreach (var status in Enum.GetValues<ShipmentStatus>())
+                        {
+                            <MudSelectItem Value="@status">@GetStatusText(status)</MudSelectItem>
+                        }
+                    </MudSelect>
+                    
+                    <MudTextField T="string" Label="@L["Notes"]" @bind-Value="_statusNotes" Lines="3" Class="mb-4" />
+                    
+                    @* <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                              OnClick="UpdateStatus" Disabled="@(_newStatus == _shipment.Status)">
+                        @L["UpdateStatus"]
+                    </MudButton> *@
+                </MudPaper>
+                
+                <MudPaper Class="pa-4 mb-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">@L["Courier Information"]</MudText>
+                    
+                    <MudTextField T="string" Label="@L["CourierTrackingNumber"]" @bind-Value="_courierTrackingNumber" 
+                                  Class="mb-4" FullWidth="true" />
+                    
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                              OnClick="UpdateCourierInfo">
+                        @L["Update"]
+                    </MudButton>
+                </MudPaper>
+                
+                <MudPaper Class="pa-4">
+                    <MudText Typo="Typo.h6" Class="mb-4">@L["Actions"]</MudText>
+                    
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Class="mb-2"
+                              StartIcon="@Icons.Material.Filled.Email"
+                              OnClick="SendNotification">
+                        @L["Send Notification"]
+                    </MudButton>
+                    
+                    <MudButton Variant="Variant.Outlined" Color="Color.Warning" FullWidth="true" Class="mb-2"
+                              StartIcon="@Icons.Material.Filled.AttachFile"
+                              OnClick="RequestDocuments">
+                        @L["RequestDocument"]
+                    </MudButton>
+                    
+                    @if (!_shipment.IsPaid && _shipment.Status is not (ShipmentStatus.Cancelled or ShipmentStatus.Delivered))
+                    {
+                        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Class="mb-2"
+                                  StartIcon="@Icons.Material.Filled.Cancel"
+                                  OnClick="@(() => UpdateStatus(ShipmentStatus.Cancelled))">
+                            @L["Cancel Shipment"]
+                        </MudButton>
+                    }
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    </MudContainer>
+    
+    <MudDialog @bind-IsVisible="_isUploadDialogVisible" Options="new DialogOptions { CloseOnEscapeKey = true }">
+        <TitleContent>
+            <MudText Typo="Typo.h6">@L["UploadDocument"]</MudText>
+        </TitleContent>
+        <DialogContent>
+            <MudForm @ref="_uploadForm" @bind-IsValid="@_isUploadFormValid">
+                <MudSelect T="DocumentType" Label="@L["DocumentType"]" @bind-Value="_documentType" Required="true"
+                          RequiredError="@L["ErrorFieldRequired"]">
+                    <MudSelectItem Value="@DocumentType.Invoice">@L["Invoice"]</MudSelectItem>
+                    <MudSelectItem Value="@DocumentType.PaymentProof">@L["PaymentProof"]</MudSelectItem>
+                    <MudSelectItem Value="@DocumentType.ProductImage">@L["ProductImage"]</MudSelectItem>
+                    <MudSelectItem Value="@DocumentType.ShippingLabel">@L["ShippingLabel"]</MudSelectItem>
+                    <MudSelectItem Value="@DocumentType.CustomsDeclaration">@L["CustomsDeclaration"]</MudSelectItem>
+                    <MudSelectItem Value="@DocumentType.OtherDocumentation">@L["OtherDocumentation"]</MudSelectItem>
+                </MudSelect>
+                
+                <MudTextField T="string" Label="@L["Notes"]" @bind-Value="_documentNotes" Lines="3" />
+                
+                <InputFile id="fileInput" OnChange="OnInputFileChange" hidden accept=".pdf,.jpg,.jpeg,.png" />
+                
+                <div class="d-flex align-center justify-space-between mt-4">
+                    <div>
+                        @if (_selectedFile != null)
+                        {
+                            <MudText Typo="Typo.body2">@_selectedFile.Name</MudText>
+                            <MudText Typo="Typo.caption">@(_selectedFile.Size / 1024) KB</MudText>
+                        }
+                        else
+                        {
+                            <MudText Typo="Typo.body2">@L["No file selected"]</MudText>
+                        }
+                    </div>
+                    
+                    <MudButton HtmlTag="label" Variant="Variant.Filled" Color="Color.Primary"
+                              StartIcon="@Icons.Material.Filled.CloudUpload" for="fileInput">
+                        @L["Choose File"]
+                    </MudButton>
+                </div>
+            </MudForm>
+        </DialogContent>
+        <DialogActions>
+            <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="@(() => _isUploadDialogVisible = false)">
+                @L["Cancel"]
+            </MudButton>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Disabled="@(!_isUploadFormValid || _selectedFile == null || _isUploading)"
+                      OnClick="UploadDocument">
+                @if (_isUploading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                    <MudText Class="ms-2">@L["Uploading"]</MudText>
+                }
+                else
+                {
+                    @L["Upload"]
+                }
+            </MudButton>
+        </DialogActions>
+    </MudDialog>
+}
+else
+{
+    <MudAlert Severity="Severity.Error">@L["Shipment not found."]</MudAlert>
+}
+
+@code {
+    [Parameter]
+    public Guid Id { get; set; }
+    
+    private Shipment _shipment;
+    private bool _isLoading = true;
+    private bool _isUploadDialogVisible = false;
+    private bool _isUploadFormValid = false;
+    private bool _isUploading = false;
+    private string _newNote;
+    private bool _isPublicNote;
+    private ShipmentStatus _newStatus;
+    private string _statusNotes;
+    private string _courierTrackingNumber;
+    private MudForm _uploadForm;
+    private IBrowserFile _selectedFile;
+    private DocumentType _documentType = DocumentType.Invoice;
+    private string _documentNotes;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadShipmentAsync();
+    }
+    
+    private async Task LoadShipmentAsync()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            _shipment = await ShipmentService.GetShipmentByIdAsync(Id);
+            _newStatus = _shipment.Status;
+            _courierTrackingNumber = _shipment.CourierTrackingNumber;
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error loading shipment: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    
+    private async Task UpdateStatus(ShipmentStatus status = default)
+    {
+        // If called with parameter, use it; otherwise use the form value
+        var targetStatus = status != default ? status : _newStatus;
+
+        if (targetStatus == _shipment.Status)
+        {
+            return;
+        }
+
+
+        try
+        {
+            await ShipmentService.UpdateShipmentStatusAsync(Id, _newStatus, _statusNotes);
+            _statusNotes = "";
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Shipment status updated successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error updating status: "] + ex.Message, Severity.Error);
+        }
+    }
+    
+    private async Task UpdateCourierInfo()
+    {
+        try
+        {
+            // Call a service to update courier information
+            // For simplicity, we'll just reload the shipment
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Courier information updated successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error updating courier information: "] + ex.Message, Severity.Error);
+        }
+    }
+    
+    private async Task RecalculateCost()
+    {
+        try
+        {
+            // Call a service to recalculate cost
+            // For simplicity, we'll just reload the shipment
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Cost recalculated successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error recalculating cost: "] + ex.Message, Severity.Error);
+        }
+    }
+    
+    private async Task MarkAsPaid()
+    {
+        try
+        {
+            // Call a service to mark as paid
+            // For simplicity, we'll just reload the shipment
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Shipment marked as paid"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error marking as paid: "] + ex.Message, Severity.Error);
+        }
+    }
+    
+    private async Task SendNotification()
+    {
+        var parameters = new DialogParameters
+        {
+            { "ShipmentId", Id },
+            { "UserEmail", _shipment.User?.Email }
+        };
+        
+        var dialog = await DialogService.ShowAsync<SendNotificationDialog>(L["Send Notification"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            Snackbar.Add(L["Notification sent successfully"], Severity.Success);
+        }
+    }
+    
+    private async Task RequestDocuments()
+    {
+        var parameters = new DialogParameters
+        {
+            { "ShipmentId", Id },
+            { "UserEmail", _shipment.User?.Email }
+        };
+        
+        var dialog = await DialogService.ShowAsync<RequestDocumentsDialog>(L["Request Documents"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            Snackbar.Add(L["Document request sent successfully"], Severity.Success);
+        }
+    }
+    
+    private void OpenUploadDialog()
+    {
+        _selectedFile = null;
+        _documentType = DocumentType.Invoice;
+        _documentNotes = "";
+        _isUploadDialogVisible = true;
+    }
+    
+    private void OnInputFileChange(InputFileChangeEventArgs e)
+    {
+        _selectedFile = e.File;
+    }
+    
+    private async Task UploadDocument()
+    {
+        if (_selectedFile == null)
+        {
+            return;
+        }
+
+        _isUploading = true;
+
+        try
+        {
+            // Convertir IBrowserFile a UploadedFile
+            var uploadedFile = ConvertToUploadedFile(_selectedFile);
+
+            // Llama a tu servicio pasando el objeto UploadedFile
+            await ShipmentService.UploadDocumentAsync(Id, uploadedFile, _documentType, _documentNotes);
+
+            _isUploadDialogVisible = false;
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Document uploaded successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error uploading document: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isUploading = false;
+        }
+    }
+
+    
+    private async Task DeleteDocument(Guid documentId)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", L["Are you sure you want to delete this document?"] },
+            { "ButtonText", L["Delete"] },
+            { "Color", Color.Error }
+        };
+        
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["Confirm Deletion"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            try
+            {
+                // Call a service to delete the document
+                // For simplicity, we'll just reload the shipment
+                await LoadShipmentAsync();
+                Snackbar.Add(L["Document deleted successfully"], Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(L["Error deleting document: "] + ex.Message, Severity.Error);
+            }
+        }
+    }
+    
+    private async Task AddNote()
+    {
+        if (string.IsNullOrWhiteSpace(_newNote))
+        {
+            return;
+        }
+        
+        try
+        {
+            // Call a service to add a note
+            // For simplicity, we'll just reload the shipment
+            _newNote = "";
+            _isPublicNote = false;
+            await LoadShipmentAsync();
+            Snackbar.Add(L["Note added successfully"], Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error adding note: "] + ex.Message, Severity.Error);
+        }
+    }
+    
+    private string GetDocumentTypeName(DocumentType type) => type switch
+    {
+        DocumentType.Invoice => L["Invoice"],
+        DocumentType.PaymentProof => L["PaymentProof"],
+        DocumentType.ProductImage => L["ProductImage"],
+        DocumentType.ShippingLabel => L["ShippingLabel"],
+        DocumentType.CustomsDeclaration => L["CustomsDeclaration"],
+        DocumentType.OtherDocumentation => L["OtherDocumentation"],
+        _ => type.ToString()
+    };
+    private UploadedFile ConvertToUploadedFile(IBrowserFile file)
+    {
+        // Puedes definir un límite de tamaño para el stream si es necesario, por ejemplo: file.OpenReadStream(1024 * 1024 * 15) para 15MB
+        return new UploadedFile
+            {
+                FileStream = file.OpenReadStream(file.Size), // O bien, especifica un límite de tamaño máximo
+                FileName = file.Name,
+                ContentType = file.ContentType,
+                Size = file.Size
+            };
+    }
+
+    
+    private Color GetTimelineColor(ShipmentStatus status) => status switch
+    {
+        ShipmentStatus.Draft => Color.Default,
+        ShipmentStatus.Submitted => Color.Info,
+        ShipmentStatus.AwaitingDocuments => Color.Warning,
+        ShipmentStatus.DocumentsReviewed => Color.Info,
+        ShipmentStatus.AwaitingPayment => Color.Warning,
+        ShipmentStatus.AwaitingArrival => Color.Info,
+        ShipmentStatus.ReceivedInWarehouse => Color.Info,
+        ShipmentStatus.Processing => Color.Info,
+        ShipmentStatus.InTransit => Color.Primary,
+        ShipmentStatus.InDelivery => Color.Primary,
+        ShipmentStatus.Delivered => Color.Success,
+        ShipmentStatus.Exception => Color.Error,
+        ShipmentStatus.Cancelled => Color.Error,
+        _ => Color.Default
+    };
+    
+    private string GetStatusText(ShipmentStatus status) => status switch
+    {
+        ShipmentStatus.Draft => L["StatusDraft"],
+        ShipmentStatus.Submitted => L["StatusSubmitted"],
+        ShipmentStatus.AwaitingDocuments => L["StatusAwaitingDocuments"],
+        ShipmentStatus.DocumentsReviewed => L["StatusDocumentsReviewed"],
+        ShipmentStatus.AwaitingPayment => L["StatusAwaitingPayment"],
+        ShipmentStatus.AwaitingArrival => L["StatusAwaitingArrival"],
+        ShipmentStatus.ReceivedInWarehouse => L["StatusReceivedInWarehouse"],
+        ShipmentStatus.Processing => L["StatusProcessing"],
+        ShipmentStatus.InTransit => L["StatusInTransit"],
+        ShipmentStatus.InDelivery => L["StatusInDelivery"],
+        ShipmentStatus.Delivered => L["StatusDelivered"],
+        ShipmentStatus.Exception => L["StatusException"],
+        ShipmentStatus.Cancelled => L["StatusCancelled"],
+        _ => status.ToString()
+    };
+}

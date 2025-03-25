@@ -1,0 +1,215 @@
+﻿@page "/admin/shipments"
+@using FastyBox.Application.Common.Interfaces
+@using FastyBox.Application.Common.Models
+@using FastyBox.Application.Shipments.Queries.GetUserShipments
+@using FastyBox.Domain.Enums
+@using FastyBox.Web.Resources
+@using FastyBox.Web.Services
+@using FluentValidation
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@using Severity = MudBlazor.Severity
+@attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
+@inject IStringLocalizer<SharedResource> L
+@inject FastyBox.Web.Services.IShipmentService ShipmentService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+@inject ISnackbar Snackbar
+@inject FastyBox.Web.Services.IShipmentService ShipmentService
+
+<PageTitle>@L["Shipments"] - @L["Admin"] - @L["AppName"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <MudItem xs="12" Class="d-flex justify-space-between align-center">
+            <MudText Typo="Typo.h4">@L["Shipments"]</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" 
+                       OnClick="@(() => NavigationManager.NavigateTo("/shipments/new"))">
+                @L["NewShipment"]
+            </MudButton>
+        </MudItem>
+        
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                <MudGrid>
+                    <MudItem xs="12" md="3">
+                        <MudSelect T="ShipmentStatus?" Label="@L["Status"]" @bind-Value="_selectedStatus" FullWidth="true" HelperText="@L["Filter by status"]">
+                            <MudSelectItem T="ShipmentStatus?" Value="@(null)">@L["All Statuses"]</MudSelectItem>
+                                <MudSelectItem T="ShipmentStatus?" Value="@ShipmentStatus.Draft">@L["StatusDraft"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Draft">@L["StatusDraft"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Submitted">@L["StatusSubmitted"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.AwaitingDocuments">@L["StatusAwaitingDocuments"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.DocumentsReviewed">@L["StatusDocumentsReviewed"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.AwaitingPayment">@L["StatusAwaitingPayment"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.AwaitingArrival">@L["StatusAwaitingArrival"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.ReceivedInWarehouse">@L["StatusReceivedInWarehouse"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Processing">@L["StatusProcessing"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.InTransit">@L["StatusInTransit"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.InDelivery">@L["StatusInDelivery"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Delivered">@L["StatusDelivered"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Exception">@L["StatusException"]</MudSelectItem>
+                            <MudSelectItem Value="@ShipmentStatus.Cancelled">@L["StatusCancelled"]</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                    
+                    <MudItem xs="12" md="3">
+                            <MudSelect T="ShipmentType?" Label="@L["Type"]" @bind-Value="_selectedType" FullWidth="true"
+                                       HelperText="@L["Filter by type"]">
+                                <MudSelectItem T="ShipmentType?" Value="@(null)">@L["All Types"]</MudSelectItem>
+                                <MudSelectItem T="ShipmentType?" Value="@ShipmentType.Forwarding">@L["TypeForwarding"]</MudSelectItem>
+                                <MudSelectItem T="ShipmentType?" Value="@ShipmentType.CommercialImport">@L["TypeCommercialImport"]</MudSelectItem>
+                            </MudSelect>
+
+                    </MudItem>
+                    
+                    <MudItem xs="12" md="6">
+                        <MudTextField T="string" Label="@L["Search"]" @bind-Value="_searchString" FullWidth="true"
+                                    HelperText="@L["Search by tracking number, user name, or reference"]" />
+                    </MudItem>
+                    
+                    <MudItem xs="12" Class="d-flex justify-end">
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ApplyFilters">
+                            @L["Apply Filters"]
+                        </MudButton>
+                        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" Class="ml-2" OnClick="ClearFilters">
+                            @L["Clear Filters"]
+                        </MudButton>
+                    </MudItem>
+                </MudGrid>
+            </MudPaper>
+        </MudItem>
+        
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                @if (_isLoading)
+                {
+                    <div class="d-flex justify-center">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    </div>
+                }
+                else if (_shipments?.Items?.Count > 0)
+                {
+                   <MudTable Items="@_shipments.Items" Hover="true" Breakpoint="Breakpoint.Sm" Loading="@_isLoading">
+                        <HeaderContent>
+                            <MudTh>@L["TrackingNumber"]</MudTh>
+                            <MudTh>@L["User"]</MudTh>
+                            <MudTh>@L["Type"]</MudTh>
+                            <MudTh>@L["Status"]</MudTh>
+                            <MudTh>@L["DeclaredValue"]</MudTh>
+                            <MudTh>@L["TotalCost"]</MudTh>
+                            <MudTh>@L["IsPaid"]</MudTh>
+                            <MudTh>@L["CreatedAt"]</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                            <RowTemplate>
+                                <MudTr>
+                                    <MudTd DataLabel="@L["TrackingNumber"]">@context.TrackingNumber</MudTd>
+                                    <MudTd DataLabel="@L["User"]">@(context.User?.FullName ?? "-")</MudTd>
+                                    <MudTd DataLabel="@L["Type"]">
+                                        @(context.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])
+                                    </MudTd>
+                                    <MudTd DataLabel="@L["Status"]">
+                                        <ShipmentStatusBadge Status="@context.Status" />
+                                    </MudTd>
+                                    <MudTd DataLabel="@L["DeclaredValue"]">$@context.DeclaredValue.ToString("N2")</MudTd>
+                                    <MudTd DataLabel="@L["TotalCost"]">$@context.TotalCost.ToString("N2")</MudTd>
+                                    <MudTd DataLabel="@L["IsPaid"]">
+                                        @if (context.IsPaid)
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Check" Color="Color.Success" />
+                                    }
+                                    else
+                                    {
+                                        <MudIcon Icon="@Icons.Material.Filled.Close" Color="Color.Error" />
+                                    }
+                                </MudTd>
+                                <MudTd DataLabel="@L["CreatedAt"]">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                                    <MudTd>
+                                        <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                                       OnClick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{context.Id}"))" />
+                                    </MudTd>
+                                </MudTr>
+                            </RowTemplate>
+
+    <PagerContent>
+        <MudTablePager PageSizeOptions="new int[] { 10, 25, 50 }" />
+    </PagerContent>
+</MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        @L["No shipments found matching the criteria."]
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private PaginatedList<ShipmentBriefDto> _shipments;
+    private bool _isLoading = true;
+    private ShipmentStatus? _selectedStatus;
+    private ShipmentType? _selectedType;
+    private string _searchString;
+    private Guid? _tenantId;
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tenantId = await UserService.GetCurrentTenantIdAsync();
+        await LoadShipmentsAsync();
+    }
+
+    private async Task LoadShipmentsAsync()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            // In a real implementation, this would call an admin-specific service method
+            // that supports filtering by status, type, search, etc.
+            // For simplicity, we're using the same method as the customer-facing list
+            _shipments = await ShipmentService.GetAdminShipmentsAsync(
+                _tenantId,
+                _selectedStatus,
+                _selectedType,
+                _searchString,
+                _currentPage,
+                _pageSize);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error loading shipments: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadShipmentsAsync();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedStatus = null;
+        _selectedType = null;
+        _searchString = null;
+        _currentPage = 1;
+        await LoadShipmentsAsync();
+    }
+
+    private async Task OnPageChanged(int page)
+    {
+        _currentPage = page;
+        await LoadShipmentsAsync();
+    }
+}

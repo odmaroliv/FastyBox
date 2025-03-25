@@ -1,0 +1,80 @@
+﻿@using FastyBox.Application.Common.Interfaces
+@using FastyBox.Web.Resources
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@inject IStringLocalizer<SharedResource> L
+@inject INotificationService NotificationService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudTextField T="string" Label="@L["To"]" Value="@UserEmail" Disabled="true" FullWidth="true" Class="mb-4" />
+            
+            <MudTextField T="string" Label="@L["Title"]" @bind-Value="_title" Required="true" 
+                         RequiredError="@L["ErrorFieldRequired"]" FullWidth="true" Class="mb-4" />
+            
+            <MudTextField T="string" Label="@L["Message"]" @bind-Value="_message" Required="true" 
+                         RequiredError="@L["ErrorFieldRequired"]" Lines="5" FullWidth="true" />
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || _isSending)">
+            @if (_isSending)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">@L["Sending"]</MudText>
+            }
+            else
+            {
+                @L["Send"]
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; }
+    
+    [Parameter]
+    public Guid ShipmentId { get; set; }
+    
+    [Parameter]
+    public string UserEmail { get; set; }
+    
+    private MudForm _form;
+    private bool _isValid;
+    private bool _isSending;
+    private string _title;
+    private string _message;
+    
+    private async Task Submit()
+    {
+        if (!_isValid)
+        {
+            return;
+        }
+        
+        _isSending = true;
+        
+        try
+        {
+            // Here we would call the service to send notification
+            await Task.Delay(500); // Simulated API call
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error sending notification: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSending = false;
+        }
+    }
+    
+    private void Cancel() => MudDialog.Cancel();
+}

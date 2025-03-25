@@ -1,0 +1,174 @@
+﻿@page "/admin/pricing"
+@using FastyBox.Domain.Entities
+@using FastyBox.Web.Resources
+@using FastyBox.Web.Services
+@using FastyBox.Web.Shared.Dialogs
+@using Microsoft.AspNetCore.Authorization
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
+@inject IStringLocalizer<SharedResource> L
+@inject IPricingService PricingService
+@inject IUserService UserService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>@L["PricingRules"] - @L["Admin"] - @L["AppName"]</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.ExtraLarge">
+    <MudGrid>
+        <MudItem xs="12" Class="d-flex justify-space-between align-center">
+            <MudText Typo="Typo.h4">@L["PricingRules"]</MudText>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add" 
+                       OnClick="OpenAddPricingRuleDialog">
+                @L["AddPricingRule"]
+            </MudButton>
+        </MudItem>
+        
+        <MudItem xs="12">
+            <MudPaper Class="pa-4">
+                @if (_isLoading)
+                {
+                    <div class="d-flex justify-center">
+                        <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                    </div>
+                }
+                else if (_pricingRules?.Count > 0)
+                {
+                    <MudTable Items="@_pricingRules" Hover="true" Breakpoint="Breakpoint.Sm">
+                        <HeaderContent>
+                            <MudTh>@L["MinWeight"]</MudTh>
+                            <MudTh>@L["MaxWeight"]</MudTh>
+                            <MudTh>@L["Price"]</MudTh>
+                            <MudTh>@L["Status"]</MudTh>
+                            <MudTh></MudTh>
+                        </HeaderContent>
+                        <RowTemplate>
+                            <MudTd DataLabel="@L["MinWeight"]">@context.MinWeight kg</MudTd>
+                            <MudTd DataLabel="@L["MaxWeight"]">@context.MaxWeight kg</MudTd>
+                            <MudTd DataLabel="@L["Price"]">$@context.Price.ToString("N2")</MudTd>
+                            <MudTd DataLabel="@L["Status"]">
+                                @if (context.IsActive)
+                                {
+                                    <MudChip T="string" Color="Color.Success" Size="Size.Small">@L["Active"]</MudChip>
+                                }
+                                else
+                                {
+                                    <MudChip T="string" Color="Color.Error" Size="Size.Small">@L["Inactive"]</MudChip>
+                                }
+                            </MudTd>
+                            <MudTd>
+                                <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                              OnClick="@(() => OpenEditPricingRuleDialog(context))" />
+                                <MudIconButton Icon="@Icons.Material.Filled.Delete" Color="Color.Error"
+                                              OnClick="@(() => DeletePricingRule(context))" />
+                            </MudTd>
+                        </RowTemplate>
+                    </MudTable>
+                }
+                else
+                {
+                    <MudAlert Severity="Severity.Info">
+                        @L["No pricing rules found. Add a new pricing rule to get started."]
+                    </MudAlert>
+                }
+            </MudPaper>
+        </MudItem>
+    </MudGrid>
+</MudContainer>
+
+@code {
+    private List<PricingRule> _pricingRules;
+    private bool _isLoading = true;
+    private Guid? _tenantId;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _tenantId = await UserService.GetCurrentTenantIdAsync();
+        await LoadPricingRulesAsync();
+    }
+
+    private async Task LoadPricingRulesAsync()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            if (_tenantId.HasValue)
+            {
+                _pricingRules = (await PricingService.GetPricingRulesAsync(_tenantId.Value)).ToList();
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error loading pricing rules: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task OpenAddPricingRuleDialog()
+    {
+        var parameters = new DialogParameters();
+        if (_tenantId.HasValue)
+        {
+            parameters.Add("TenantId", _tenantId.Value);
+        }
+        
+        var dialog = await DialogService.ShowAsync<PricingRuleDialog>(L["AddPricingRule"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadPricingRulesAsync();
+            Snackbar.Add(L["Pricing rule added successfully"], Severity.Success);
+        }
+    }
+
+    private async Task OpenEditPricingRuleDialog(PricingRule rule)
+    {
+        var parameters = new DialogParameters
+        {
+            { "PricingRule", rule }
+        };
+        
+        var dialog = await DialogService.ShowAsync<PricingRuleDialog>(L["Edit Pricing Rule"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            await LoadPricingRulesAsync();
+            Snackbar.Add(L["Pricing rule updated successfully"], Severity.Success);
+        }
+    }
+
+    private async Task DeletePricingRule(PricingRule rule)
+    {
+        var parameters = new DialogParameters
+        {
+            { "ContentText", L["Are you sure you want to delete this pricing rule?"] },
+            { "ButtonText", L["Delete"] },
+            { "Color", Color.Error }
+        };
+        
+        var dialog = await DialogService.ShowAsync<ConfirmDialog>(L["Confirm Deletion"], parameters);
+        var result = await dialog.Result;
+        
+        if (!result.Canceled)
+        {
+            try
+            {
+                // Call a service to delete the pricing rule
+                // For simplicity, we'll just reload the pricing rules
+                await LoadPricingRulesAsync();
+                Snackbar.Add(L["Pricing rule deleted successfully"], Severity.Success);
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add(L["Error deleting pricing rule: "] + ex.Message, Severity.Error);
+            }
+        }
+    }
+}

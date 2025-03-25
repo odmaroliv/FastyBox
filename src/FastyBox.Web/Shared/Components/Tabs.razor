@@ -1,0 +1,108 @@
+﻿@namespace FastyBox.Web.Shared.Components
+
+<div>
+    <div class="border-b border-gray-200 dark:border-gray-700">
+        <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+            @foreach (var tab in _tabs)
+            {
+                <button @onclick="() => ActivateTab(tab.Name)" class="@GetTabClasses(tab.Name) py-4 px-1 border-b-2 font-medium text-sm">
+                    @if (!string.IsNullOrEmpty(tab.Icon))
+                    {
+                        <i class="@tab.Icon mr-2"></i>
+                    }
+                    @tab.Label
+                </button>
+            }
+        </nav>
+    </div>
+
+    <div class="py-4">
+        @if (_activeTabContent != null)
+        {
+            @_activeTabContent
+        }
+    </div>
+</div>
+
+@code {
+    private List<TabItem> _tabs = new List<TabItem>();
+    private RenderFragment _activeTabContent;
+    private string _activeTab;
+
+    [Parameter]
+    public RenderFragment ChildContent { get; set; }
+
+    [Parameter]
+    public string DefaultTab { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnTabChanged { get; set; }
+
+    protected override void OnInitialized()
+    {
+        if (!string.IsNullOrEmpty(DefaultTab))
+        {
+            _activeTab = DefaultTab;
+        }
+    }
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (firstRender && _tabs.Count > 0)
+        {
+            if (string.IsNullOrEmpty(_activeTab))
+            {
+                _activeTab = _tabs[0].Name;
+            }
+
+            ActivateTab(_activeTab);
+            StateHasChanged();
+        }
+    }
+
+    internal void AddTab(TabItem tab)
+    {
+        _tabs.Add(tab);
+
+        // If this is the first tab, make it active
+        if (_tabs.Count == 1 && string.IsNullOrEmpty(_activeTab))
+        {
+            _activeTab = tab.Name;
+            _activeTabContent = tab.Content;
+        }
+
+        // If this is the tab that should be active by default
+        if (tab.Name == _activeTab)
+        {
+            _activeTabContent = tab.Content;
+        }
+    }
+
+    private void ActivateTab(string tabName)
+    {
+        var tab = _tabs.FirstOrDefault(t => t.Name == tabName);
+        if (tab != null)
+        {
+            _activeTab = tabName;
+            _activeTabContent = tab.Content;
+            OnTabChanged.InvokeAsync(tabName);
+        }
+    }
+
+    private string GetTabClasses(string tabName)
+    {
+        var isActive = _activeTab == tabName;
+
+        return isActive
+            ? "border-primary-500 text-primary-600 dark:text-primary-500"
+            : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300 dark:hover:border-gray-600";
+    }
+
+    internal class TabItem
+    {
+        public string Name { get; set; }
+        public string Label { get; set; }
+        public string Icon { get; set; }
+        public RenderFragment Content { get; set; }
+    }
+}

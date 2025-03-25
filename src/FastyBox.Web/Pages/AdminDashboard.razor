@@ -1,0 +1,160 @@
+﻿@page "/admin/dashboard"
+@using FastyBox.Application.Shipments.Queries.GetShipmentById
+@using FastyBox.Domain.Enums
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "SuperAdmin,TenantAdmin")]
+@inject IStringLocalizer<SharedResource> L
+@inject IUserService userService
+@inject NavigationManager NavigationManager
+
+<MudGrid>
+    <MudItem xs="12">
+        <MudText Typo="Typo.h4" Class="mb-4">@L["AdminDashboard"]</MudText>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.subtitle1">@L["PendingShipments"]</MudText>
+            <MudText Typo="Typo.h5">@_pendingShipments</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.subtitle1">@L["ActiveShipments"]</MudText>
+            <MudText Typo="Typo.h5">@_activeShipments</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.subtitle1">@L["CompletedShipments"]</MudText>
+            <MudText Typo="Typo.h5">@_completedShipments</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" sm="6" md="3">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.subtitle1">@L["TotalRevenue"]</MudText>
+            <MudText Typo="Typo.h5">$@_totalRevenue.ToString("N2")</MudText>
+            <MudText Typo="Typo.caption">@L["ThisMonth"]</MudText>
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="8">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">@L["AwaitingReview"]</MudText>
+            
+            @if (_isLoading)
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            }
+            else if (_shipments?.Count > 0)
+            {
+                <MudTable Items="@_shipments" Hover="true" Breakpoint="Breakpoint.Sm">
+                    <HeaderContent>
+                        <MudTh>@L["TrackingNumber"]</MudTh>
+                        <MudTh>@L["Status"]</MudTh>
+                        <MudTh>@L["User"]</MudTh>
+                        <MudTh>@L["DeclaredValue"]</MudTh>
+                        <MudTh>@L["CreatedAt"]</MudTh>
+                        <MudTh></MudTh>
+                    </HeaderContent>
+                    <RowTemplate>
+                        <MudTd DataLabel="@L["TrackingNumber"]">@context.TrackingNumber</MudTd>
+                        <MudTd DataLabel="@L["Status"]">
+                            <ShipmentStatusBadge Status="@context.Status" />
+                        </MudTd>
+                        <MudTd DataLabel="@L["User"]">@(context.User?.FullName ?? "N/A")</MudTd>
+                        <MudTd DataLabel="@L["DeclaredValue"]">$@context.DeclaredValue.ToString("N2")</MudTd>
+                        <MudTd DataLabel="@L["CreatedAt"]">@context.CreatedAt.ToLocalTime().ToString("g")</MudTd>
+                        <MudTd>
+                            <MudIconButton Icon="@Icons.Material.Filled.Edit" Color="Color.Primary"
+                                          OnClick="@(() => NavigationManager.NavigateTo($"/admin/shipments/{context.Id}"))" />
+                        </MudTd>
+                    </RowTemplate>
+                </MudTable>
+            }
+            else
+            {
+                <MudAlert Severity="Severity.Info">
+                    @L["No shipments awaiting review"]
+                </MudAlert>
+            }
+        </MudPaper>
+    </MudItem>
+    
+    <MudItem xs="12" md="4">
+        <MudPaper Elevation="2" Class="pa-4">
+            <MudText Typo="Typo.h6" Class="mb-4">@L["ShipmentStatusDistribution"]</MudText>
+            
+            @if (_isLoading)
+            {
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            }
+            else
+            {
+                <MudChart ChartType="ChartType.Pie"
+                          Width="300px" Height="300px"
+                          InputData="@_statusData"
+                          InputLabels="@_statusLabels" />
+            }
+        </MudPaper>
+    </MudItem>
+</MudGrid>
+
+@code {
+    private List<ShipmentDto> _shipments;
+    private int _pendingShipments;
+    private int _activeShipments;
+    private int _completedShipments;
+    private decimal _totalRevenue;
+    private bool _isLoading = true;
+    
+    // Chart data
+    private double[] _statusData;
+    private string[] _statusLabels;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+    }
+    
+    private async Task LoadData()
+    {
+        _isLoading = true;
+        
+        try
+        {
+            var tenantId = await userService.GetCurrentTenantIdAsync();
+            
+            // Get dashboard data from a service
+            // This is mocked data for now
+            _pendingShipments = 12;
+            _activeShipments = 25;
+            _completedShipments = 156;
+            _totalRevenue = 12450.75m;
+            
+            // Mocked chart data
+            _statusData = new double[] { 25, 77, 28, 5, 15, 6 };
+            _statusLabels = new string[] { 
+                L["StatusAwaitingDocuments"], 
+                L["StatusReceivedInWarehouse"], 
+                L["StatusInTransit"], 
+                L["StatusInDelivery"],
+                L["StatusDelivered"],
+                L["StatusException"]
+            };
+            
+            // Mocked shipment data
+            _shipments = new List<ShipmentDto>
+            {
+                // Sample shipments would be loaded here
+            };
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

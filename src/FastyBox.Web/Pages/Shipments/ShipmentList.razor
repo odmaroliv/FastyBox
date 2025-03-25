@@ -1,0 +1,405 @@
+﻿@page "/shipments"
+@inject IStringLocalizer<SharedResource> L
+@inject IShipmentService ShipmentService
+@inject IUserService UserService
+@inject NavigationManager NavigationManager
+
+<PageTitle>@L["Shipments"] - @L["AppName"]</PageTitle>
+
+    <div class="space-y-6">
+        <div class="flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-gray-900 dark:text-white">@L["Shipments"]</h1>
+        <button type="button"
+                @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))"
+                class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+            <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+            </svg>
+            @L["New Shipment"]
+        </button>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white dark:bg-gray-800 shadow-soft rounded-lg p-6">
+        <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <div>
+                <label for="status-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Status"]</label>
+                <select id="status-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md" @bind="_selectedStatus">
+                    <option value="">@L["All Statuses"]</option>
+                    @foreach (var status in Enum.GetValues<ShipmentStatus>())
+                    {
+                        <option value="@status">@GetStatusText(status)</option>
+                    }
+                </select>
+            </div>
+
+            <div>
+                <label for="type-filter" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Type"]</label>
+                <select id="type-filter" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 dark:border-gray-600 focus:outline-none focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:text-white sm:text-sm rounded-md" @bind="_selectedType">
+                    <option value="">@L["All Types"]</option>
+                    <option value="@ShipmentType.Forwarding">@L["TypeForwarding"]</option>
+                    <option value="@ShipmentType.CommercialImport">@L["TypeCommercialImport"]</option>
+                </select>
+            </div>
+
+            <div>
+                <label for="search" class="block text-sm font-medium text-gray-700 dark:text-gray-300">@L["Search"]</label>
+                <div class="mt-1 relative rounded-md shadow-sm">
+                    <input type="text" id="search" class="focus:ring-primary-500 focus:border-primary-500 block w-full pl-3 pr-12 sm:text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white rounded-md" placeholder="@L["Tracking number, reference, etc."]" @bind="_searchText" @bind:event="oninput" @onkeyup="HandleSearchKeyPress">
+                    <div class="absolute inset-y-0 right-0 flex items-center">
+                        <button type="button" class="p-1 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" @onclick="ApplyFilters">
+                            <svg class="h-5 w-5 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-end space-x-3">
+                <button type="button" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" @onclick="ApplyFilters">
+                    @L["Apply Filters"]
+                </button>
+                <button type="button" class="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500" @onclick="ClearFilters">
+                    @L["Clear"]
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Shipments List -->
+    <div class="bg-white dark:bg-gray-800 shadow-soft rounded-lg overflow-hidden">
+        @if (_isLoading)
+        {
+            <div class="flex justify-center items-center p-12">
+                <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-600 dark:border-primary-400"></div>
+            </div>
+        }
+        else if (_shipments?.Items?.Count > 0)
+        {
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["TrackingNumber"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Type"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Status"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["DeclaredValue"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Weight"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["TotalCost"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["CreatedAt"]
+                            </th>
+                            <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                @L["Actions"]
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                        @foreach (var shipment in _shipments.Items)
+                        {
+                            <tr class="hover:bg-gray-50 dark:hover:bg-gray-700 cursor-pointer" @onclick="@(() => ViewShipment(shipment.Id))">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary-600 dark:text-primary-400">
+                                    @shipment.TrackingNumber
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @(shipment.Type == ShipmentType.Forwarding ? L["TypeForwarding"] : L["TypeCommercialImport"])
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <ShipmentStatusBadge Status="@shipment.Status" />
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    $@shipment.DeclaredValue.ToString("N2")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @shipment.Weight kg
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    @if (shipment.IsPaid)
+                                    {
+                                        <span class="text-gray-500 dark:text-gray-400">$@shipment.TotalCost.ToString("N2")</span>
+                                    }
+                                    else if (shipment.TotalCost > 0)
+                                    {
+                                        <div class="flex items-center">
+                                            <span class="text-gray-500 dark:text-gray-400">$@shipment.TotalCost.ToString("N2")</span>
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300">
+                                                @L["Unpaid"]
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-gray-500 dark:text-gray-400">-</span>
+                                    }
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                                    @shipment.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
+                                    <button @onclick="@((e) => { e.StopPropagation(); ViewShipment(shipment.Id); })" class="text-primary-600 dark:text-primary-400 hover:text-primary-900 dark:hover:text-primary-300">
+                                        @L["View"]
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="bg-white dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 sm:px-6">
+                <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                    <div>
+                        <p class="text-sm text-gray-700 dark:text-gray-300">
+                            @L["Showing"]
+                            <span class="font-medium">@(_shipments.PageNumber * _pageSize - _pageSize + 1)</span>
+                            @L["to"]
+                            <span class="font-medium">@Math.Min(_shipments.PageNumber * _pageSize, _shipments.TotalCount)</span>
+                            @L["of"]
+                            <span class="font-medium">@_shipments.TotalCount</span>
+                            @L["results"]
+                        </p>
+                    </div>
+                    <div>
+                        <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                            <button @onclick="@(() => ChangePage(_shipments.PageNumber - 1))"
+                                    disabled="@(!_shipments.HasPreviousPage)"
+                                    class="@(!_shipments.HasPreviousPage ? "opacity-50 cursor-not-allowed" : "") relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <span class="sr-only">@L["Previous"]</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+
+                            @for (int i = Math.Max(1, _shipments.PageNumber - 2); i <= Math.Min(_shipments.TotalPages, _shipments.PageNumber + 2); i++)
+                            {
+                                var pageNumber = i;
+                                <button @onclick="@(() => ChangePage(pageNumber))"
+                                        class="@(pageNumber == _shipments.PageNumber
+                                        ? "z-10 bg-primary-50 dark:bg-primary-900/30 border-primary-500 dark:border-primary-500 text-primary-600 dark:text-primary-400"
+                                        : "bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700")
+                                        relative inline-flex items-center px-4 py-2 border text-sm font-medium">
+                                    @pageNumber
+                                </button>
+                            }
+
+                            <button @onclick="@(() => ChangePage(_shipments.PageNumber + 1))"
+                                    disabled="@(!_shipments.HasNextPage)"
+                                    class="@(!_shipments.HasNextPage ? "opacity-50 cursor-not-allowed" : "") relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700">
+                                <span class="sr-only">@L["Next"]</span>
+                                <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                    <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                                </svg>
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="text-center p-12">
+                <svg class="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                </svg>
+                <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-white">@L["No shipments found"]</h3>
+                <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    @L["Start by creating a new shipment or try different filters."]
+                </p>
+                <div class="mt-6">
+                    <button type="button"
+                            @onclick="@(() => NavigationManager.NavigateTo("/shipments/new"))"
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
+                        <svg class="-ml-1 mr-2 h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                        </svg>
+                        @L["New Shipment"]
+                    </button>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private PaginatedList<ShipmentBriefDto> _shipments;
+    private string _userId;
+    private bool _isLoading = true;
+
+    // Filters
+    private string _selectedStatus = string.Empty;
+    private string _selectedType = string.Empty;
+    private string _searchText = string.Empty;
+
+    // Pagination
+    private int _currentPage = 1;
+    private int _pageSize = 10;
+
+    protected override async Task OnInitializedAsync()
+    {
+        _userId = await UserService.GetCurrentUserIdAsync();
+
+        // Parse query parameters if any
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        if (!string.IsNullOrEmpty(query["status"]))
+        {
+            _selectedStatus = query["status"];
+        }
+
+        if (!string.IsNullOrEmpty(query["type"]))
+        {
+            _selectedType = query["type"];
+        }
+
+        if (!string.IsNullOrEmpty(query["search"]))
+        {
+            _searchText = query["search"];
+        }
+
+        if (!string.IsNullOrEmpty(query["page"]) && int.TryParse(query["page"], out int page))
+        {
+            _currentPage = page;
+        }
+
+        await LoadShipmentsAsync();
+    }
+
+    private async Task LoadShipmentsAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            // Convert status string to enum if selected
+            ShipmentStatus? status = null;
+            if (!string.IsNullOrEmpty(_selectedStatus) && Enum.TryParse<ShipmentStatus>(_selectedStatus, out var parsedStatus))
+            {
+                status = parsedStatus;
+            }
+
+            // Convert type string to enum if selected
+            ShipmentType? type = null;
+            if (!string.IsNullOrEmpty(_selectedType) && Enum.TryParse<ShipmentType>(_selectedType, out var parsedType))
+            {
+                type = parsedType;
+            }
+
+            _shipments = await ShipmentService.GetUserShipmentsAsync(
+                _userId,
+                status,
+                type,
+                _searchText,
+                _currentPage,
+                _pageSize);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ApplyFilters()
+    {
+        _currentPage = 1;
+        await LoadShipmentsAsync();
+        UpdateQueryParameters();
+    }
+
+    private async Task ClearFilters()
+    {
+        _selectedStatus = string.Empty;
+        _selectedType = string.Empty;
+        _searchText = string.Empty;
+        _currentPage = 1;
+
+        await LoadShipmentsAsync();
+        UpdateQueryParameters();
+    }
+
+    private async Task ChangePage(int page)
+    {
+        if (page < 1 || (_shipments != null && page > _shipments.TotalPages))
+            return;
+
+        _currentPage = page;
+        await LoadShipmentsAsync();
+
+        UpdateQueryParameters();
+    }
+
+    private async Task HandleSearchKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await ApplyFilters();
+        }
+    }
+
+    private void UpdateQueryParameters()
+    {
+        var uri = new Uri(NavigationManager.Uri);
+        var query = System.Web.HttpUtility.ParseQueryString(uri.Query);
+
+        if (!string.IsNullOrEmpty(_selectedStatus))
+            query["status"] = _selectedStatus;
+        else
+            query.Remove("status");
+
+        if (!string.IsNullOrEmpty(_selectedType))
+            query["type"] = _selectedType;
+        else
+            query.Remove("type");
+
+        if (!string.IsNullOrEmpty(_searchText))
+            query["search"] = _searchText;
+        else
+            query.Remove("search");
+
+        query["page"] = _currentPage.ToString();
+
+        var uriBuilder = new UriBuilder(uri)
+            {
+                Query = query.ToString()
+            };
+
+        NavigationManager.NavigateTo(uriBuilder.Uri.ToString(), false);
+    }
+
+    private void ViewShipment(Guid id)
+    {
+        NavigationManager.NavigateTo($"/shipments/{id}");
+    }
+
+    private string GetStatusText(ShipmentStatus status) => status switch
+    {
+        ShipmentStatus.Draft => L["StatusDraft"],
+        ShipmentStatus.Submitted => L["StatusSubmitted"],
+        ShipmentStatus.AwaitingDocuments => L["StatusAwaitingDocuments"],
+        ShipmentStatus.DocumentsReviewed => L["StatusDocumentsReviewed"],
+        ShipmentStatus.AwaitingPayment => L["StatusAwaitingPayment"],
+        ShipmentStatus.AwaitingArrival => L["StatusAwaitingArrival"],
+        ShipmentStatus.ReceivedInWarehouse => L["StatusReceivedInWarehouse"],
+        ShipmentStatus.Processing => L["StatusProcessing"],
+        ShipmentStatus.InTransit => L["StatusInTransit"],
+        ShipmentStatus.InDelivery => L["StatusInDelivery"],
+        ShipmentStatus.Delivered => L["StatusDelivered"],
+        ShipmentStatus.Exception => L["StatusException"],
+        ShipmentStatus.Cancelled => L["StatusCancelled"],
+        _ => status.ToString()
+    };
+}

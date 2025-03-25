@@ -1,0 +1,55 @@
+﻿@namespace FastyBox.Web.Shared.Components
+@using FastyBox.Domain.Enums
+@inject IStringLocalizer<SharedResource> L
+
+<span class="@GetBadgeClasses()">
+    @GetStatusText()
+</span>
+
+@code {
+    [Parameter]
+    public ShipmentStatus Status { get; set; }
+
+    private string GetBadgeClasses()
+    {
+        var baseClasses = "inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ";
+
+        var colorClasses = Status switch
+        {
+            ShipmentStatus.Draft => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300",
+            ShipmentStatus.Submitted => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+            ShipmentStatus.AwaitingDocuments => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+            ShipmentStatus.DocumentsReviewed => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+            ShipmentStatus.AwaitingPayment => "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300",
+            ShipmentStatus.AwaitingArrival => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+            ShipmentStatus.ReceivedInWarehouse => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+            ShipmentStatus.Processing => "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
+            ShipmentStatus.InTransit => "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-300",
+            ShipmentStatus.InDelivery => "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
+            ShipmentStatus.Delivered => "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
+            ShipmentStatus.Exception => "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+            ShipmentStatus.Cancelled => "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300",
+            _ => "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300"
+        };
+
+        return $"{baseClasses} {colorClasses}";
+    }
+
+    private string GetStatusText() => Status switch
+    {
+        ShipmentStatus.Draft => L["StatusDraft"],
+        ShipmentStatus.Submitted => L["StatusSubmitted"],
+        ShipmentStatus.AwaitingDocuments => L["StatusAwaitingDocuments"],
+        ShipmentStatus.DocumentsReviewed => L["StatusDocumentsReviewed"],
+        ShipmentStatus.AwaitingPayment => L["StatusAwaitingPayment"],
+        ShipmentStatus.AwaitingArrival => L["StatusAwaitingArrival"],
+        ShipmentStatus.ReceivedInWarehouse => L["StatusReceivedInWarehouse"],
+        ShipmentStatus.Processing => L["StatusProcessing"],
+        ShipmentStatus.InTransit => L["StatusInTransit"],
+        ShipmentStatus.InDelivery => L["StatusInDelivery"],
+        ShipmentStatus.Delivered => L["StatusDelivered"],
+        ShipmentStatus.Exception => L["StatusException"],
+        ShipmentStatus.Cancelled => L["StatusCancelled"],
+        _ => Status.ToString()
+    };
+}

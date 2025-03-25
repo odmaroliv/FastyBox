@@ -1,0 +1,134 @@
+﻿@using FastyBox.Domain.Entities
+@using FastyBox.Web.Resources
+@using FastyBox.Web.Services
+@using Microsoft.Extensions.Localization
+@using MudBlazor
+@inject IStringLocalizer<SharedResource> L
+@inject IPricingService PricingService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="@_isValid">
+            <MudGrid>
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal" Label="@L["MinWeight"]" @bind-Value="_model.MinWeight" Required="true" 
+                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.End" 
+                                    AdornmentText="kg" AdornmentColor="Color.Secondary" />
+                </MudItem>
+                
+                <MudItem xs="12" md="6">
+                    <MudNumericField T="decimal" Label="@L["MaxWeight"]" @bind-Value="_model.MaxWeight" Required="true" 
+                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.End" 
+                                    AdornmentText="kg" AdornmentColor="Color.Secondary" />
+                </MudItem>
+                
+                <MudItem xs="12">
+                    <MudNumericField T="decimal" Label="@L["Price"]" @bind-Value="_model.Price" Required="true" 
+                                    RequiredError="@L["ErrorFieldRequired"]" Min="0" Format="N2" Adornment="Adornment.Start" 
+                                    AdornmentText="$" AdornmentColor="Color.Secondary" />
+                </MudItem>
+
+                <MudCheckBox T="bool" @bind-Value="_model.IsActive" Label="@L["Active"]" Color="Color.Primary" />
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Text" Color="Color.Secondary" OnClick="Cancel">@L["Cancel"]</MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="Submit" Disabled="@(!_isValid || _isSubmitting)">
+            @if (_isSubmitting)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">@L["Processing"]</MudText>
+            }
+            else
+            {
+                @L["Save"]
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter]
+    IMudDialogInstance MudDialog { get; set; }
+    
+    [Parameter]
+    public PricingRule PricingRule { get; set; }
+    
+    [Parameter]
+    public Guid? TenantId { get; set; }
+    
+    private MudForm _form;
+    private bool _isValid;
+    private bool _isSubmitting;
+    private PricingRule _model = new();
+    
+    protected override void OnInitialized()
+    {
+        if (PricingRule != null)
+        {
+            // Edit mode
+            _model = new PricingRule
+            {
+                Id = PricingRule.Id,
+                MinWeight = PricingRule.MinWeight,
+                MaxWeight = PricingRule.MaxWeight,
+                Price = PricingRule.Price,
+                IsActive = PricingRule.IsActive,
+                TenantId = PricingRule.TenantId
+            };
+        }
+        else if (TenantId.HasValue)
+        {
+            // Add mode
+            _model = new PricingRule
+            {
+                IsActive = true,
+                TenantId = TenantId.Value
+            };
+        }
+    }
+    
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    
+    private async Task Submit()
+    {
+        if (!_isValid)
+        {
+            return;
+        }
+        
+        _isSubmitting = true;
+        
+        try
+        {
+            // Call a service to save the pricing rule
+            
+            // Validation check
+            if (_model.MinWeight > _model.MaxWeight)
+            {
+                Snackbar.Add(L["Minimum weight cannot be greater than maximum weight"], Severity.Warning);
+                _isSubmitting = false;
+                return;
+            }
+            
+            // Here we would call the service
+            await Task.Delay(500); // Simulated API call
+            
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(L["Error saving pricing rule: "] + ex.Message, Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+}

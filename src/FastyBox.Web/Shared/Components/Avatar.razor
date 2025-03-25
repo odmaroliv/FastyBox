@@ -1,0 +1,85 @@
+﻿@namespace FastyBox.Web.Shared.Components
+
+<div class="@GetAvatarClasses()">
+    @if (!string.IsNullOrEmpty(ImageUrl))
+    {
+        <img src="@ImageUrl" alt="@Alt" class="w-full h-full object-cover rounded-full" />
+    }
+    else if (!string.IsNullOrEmpty(Text))
+    {
+        <span class="text-white">@GetInitials()</span>
+    }
+    else
+    {
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+        </svg>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string ImageUrl { get; set; }
+
+    [Parameter]
+    public string Text { get; set; }
+
+    [Parameter]
+    public string Alt { get; set; } = "Avatar";
+
+    [Parameter]
+    public string Size { get; set; } = "md";
+
+    [Parameter]
+    public string Color { get; set; } = "primary";
+
+    [Parameter]
+    public string Class { get; set; }
+
+    private string GetAvatarClasses()
+    {
+        var classes = "flex items-center justify-center bg-gradient-to-r ";
+
+        classes += Color switch
+        {
+            "primary" => "from-primary-600 to-primary-700 ",
+            "secondary" => "from-secondary-600 to-secondary-700 ",
+            "success" => "from-green-600 to-green-700 ",
+            "danger" => "from-red-600 to-red-700 ",
+            "warning" => "from-yellow-600 to-yellow-700 ",
+            "info" => "from-blue-600 to-blue-700 ",
+            _ => "from-gray-600 to-gray-700 "
+        };
+
+        classes += Size switch
+        {
+            "xs" => "h-6 w-6 text-xs ",
+            "sm" => "h-8 w-8 text-sm ",
+            "md" => "h-10 w-10 ",
+            "lg" => "h-12 w-12 text-lg ",
+            "xl" => "h-14 w-14 text-xl ",
+            _ => "h-10 w-10 "
+        };
+
+        classes += "rounded-full ";
+
+        if (!string.IsNullOrEmpty(Class))
+        {
+            classes += $"{Class} ";
+        }
+
+        return classes.TrimEnd();
+    }
+
+    private string GetInitials()
+    {
+        if (string.IsNullOrEmpty(Text)) return "";
+
+        var parts = Text.Split(new[] { ' ', '.' }, StringSplitOptions.RemoveEmptyEntries);
+
+        if (parts.Length == 0) return "";
+        if (parts.Length == 1) return parts[0].Substring(0, 1).ToUpper();
+
+        return (parts[0].Substring(0, 1) + parts[parts.Length - 1].Substring(0, 1)).ToUpper();
+    }
+}

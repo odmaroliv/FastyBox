@@ -1,0 +1,146 @@
+﻿@namespace FastyBox.Web.Shared.Components
+@typeparam TItem
+
+<div class="flex flex-col">
+    <div class="-my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
+        <div class="py-2 align-middle inline-block min-w-full sm:px-6 lg:px-8">
+            <div class="shadow-soft overflow-hidden border-b border-gray-200 dark:border-gray-700 sm:rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                    <thead class="bg-gray-50 dark:bg-gray-800">
+                        <tr>
+                            @HeaderContent
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white dark:bg-gray-900 divide-y divide-gray-200 dark:divide-gray-800">
+                        @if (Items != null && Items.Any())
+                        {
+                            @foreach (var item in Items)
+                            {
+                                <tr @onclick="@(() => OnRowClick.InvokeAsync(item))" class="@(OnRowClick.HasDelegate ? "cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800" : "")">
+                                    @RowContent(item)
+                                </tr>
+                            }
+                        }
+                        else
+                        {
+                            <tr>
+                                <td colspan="100" class="px-6 py-10 text-center text-sm text-gray-500 dark:text-gray-400">
+                                    @(EmptyMessage ?? "No data available")
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Paginated && TotalItems > 0)
+    {
+        <div class="mt-4 flex items-center justify-between">
+            <div class="flex-1 flex justify-between sm:hidden">
+                <button @onclick="PreviousPage" disabled="@(CurrentPage <= 1)" class="btn btn-outline btn-sm">Previous</button>
+                <button @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)" class="btn btn-outline btn-sm">Next</button>
+            </div>
+            <div class="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+                <div>
+                    <p class="text-sm text-gray-700 dark:text-gray-300">
+                        Showing
+                        <span class="font-medium">@(((CurrentPage - 1) * PageSize) + 1)</span>
+                        to
+                        <span class="font-medium">@(Math.Min(CurrentPage * PageSize, TotalItems))</span>
+                        of
+                        <span class="font-medium">@TotalItems</span>
+                        results
+                    </p>
+                </div>
+                <div>
+                    <nav class="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                        <button @onclick="PreviousPage" disabled="@(CurrentPage <= 1)" class="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 @(CurrentPage <= 1 ? "opacity-50 cursor-not-allowed" : "")">
+                            <span class="sr-only">Previous</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+
+                        @for (int i = Math.Max(1, CurrentPage - 2); i <= Math.Min(TotalPages, CurrentPage + 2); i++)
+                        {
+                            var page = i;
+                            <button @onclick="@(() => GoToPage(page))" class="relative inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 @(i == CurrentPage ? "bg-primary-50 dark:bg-primary-900/30 text-primary-600 dark:text-primary-400" : "bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700") text-sm font-medium">
+                                @i
+                            </button>
+                        }
+
+                        <button @onclick="NextPage" disabled="@(CurrentPage >= TotalPages)" class="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-sm font-medium text-gray-500 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-700 @(CurrentPage >= TotalPages ? "opacity-50 cursor-not-allowed" : "")">
+                            <span class="sr-only">Next</span>
+                            <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                    </nav>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public IEnumerable<TItem> Items { get; set; }
+
+    [Parameter]
+    public RenderFragment HeaderContent { get; set; }
+
+    [Parameter]
+    public RenderFragment<TItem> RowContent { get; set; }
+
+    [Parameter]
+    public bool Paginated { get; set; }
+
+    [Parameter]
+    public int CurrentPage { get; set; } = 1;
+
+    [Parameter]
+    public int PageSize { get; set; } = 10;
+
+    [Parameter]
+    public int TotalItems { get; set; }
+
+    [Parameter]
+    public string EmptyMessage { get; set; }
+
+    [Parameter]
+    public EventCallback<int> CurrentPageChanged { get; set; }
+
+    [Parameter]
+    public EventCallback<TItem> OnRowClick { get; set; }
+
+    private int TotalPages => (int)Math.Ceiling((double)TotalItems / PageSize);
+
+    private async Task PreviousPage()
+    {
+        if (CurrentPage > 1)
+        {
+            CurrentPage--;
+            await CurrentPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+
+    private async Task NextPage()
+    {
+        if (CurrentPage < TotalPages)
+        {
+            CurrentPage++;
+            await CurrentPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+
+    private async Task GoToPage(int page)
+    {
+        if (page >= 1 && page <= TotalPages)
+        {
+            CurrentPage = page;
+            await CurrentPageChanged.InvokeAsync(CurrentPage);
+        }
+    }
+}

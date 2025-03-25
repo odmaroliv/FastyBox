@@ -1,0 +1,489 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+	<data name="AppName" xml:space="preserve">
+    <value>FastyBox</value>
+  </data>
+	<data name="AppTagline" xml:space="preserve">
+    <value>¡Compra en Estados Unidos, recibe en México!</value>
+  </data>
+	<data name="SignIn" xml:space="preserve">
+    <value>Iniciar Sesión</value>
+  </data>
+	<data name="SignUp" xml:space="preserve">
+    <value>Registrarse</value>
+  </data>
+	<data name="Email" xml:space="preserve">
+    <value>Correo Electrónico</value>
+  </data>
+	<data name="Password" xml:space="preserve">
+    <value>Contraseña</value>
+  </data>
+	<data name="RememberMe" xml:space="preserve">
+    <value>Recordarme</value>
+  </data>
+	<data name="ForgotPassword" xml:space="preserve">
+    <value>¿Olvidó su contraseña?</value>
+  </data>
+	<data name="Dashboard" xml:space="preserve">
+    <value>Panel Principal</value>
+  </data>
+	<data name="Shipments" xml:space="preserve">
+    <value>Envíos</value>
+  </data>
+	<data name="Addresses" xml:space="preserve">
+    <value>Direcciones</value>
+  </data>
+	<data name="Profile" xml:space="preserve">
+    <value>Perfil</value>
+  </data>
+	<data name="Settings" xml:space="preserve">
+    <value>Configuración</value>
+  </data>
+	<data name="Admin" xml:space="preserve">
+    <value>Administrador</value>
+  </data>
+	<data name="Logout" xml:space="preserve">
+    <value>Cerrar Sesión</value>
+  </data>
+	<data name="NewShipment" xml:space="preserve">
+    <value>Nuevo Envío</value>
+  </data>
+	<data name="ShipmentDetails" xml:space="preserve">
+    <value>Detalles del Envío</value>
+  </data>
+	<data name="TrackingNumber" xml:space="preserve">
+    <value>Número de Seguimiento</value>
+  </data>
+	<data name="Status" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+	<data name="Type" xml:space="preserve">
+    <value>Tipo</value>
+  </data>
+	<data name="Weight" xml:space="preserve">
+    <value>Peso</value>
+  </data>
+	<data name="DeclaredValue" xml:space="preserve">
+    <value>Valor Declarado</value>
+  </data>
+	<data name="Description" xml:space="preserve">
+    <value>Descripción</value>
+  </data>
+	<data name="Notes" xml:space="preserve">
+    <value>Notas</value>
+  </data>
+	<data name="Items" xml:space="preserve">
+    <value>Artículos</value>
+  </data>
+	<data name="Documents" xml:space="preserve">
+    <value>Documentos</value>
+  </data>
+	<data name="History" xml:space="preserve">
+    <value>Historial</value>
+  </data>
+	<data name="Payment" xml:space="preserve">
+    <value>Pago</value>
+  </data>
+	<data name="ShippingCost" xml:space="preserve">
+    <value>Costo de Envío</value>
+  </data>
+	<data name="ServiceFee" xml:space="preserve">
+    <value>Tarifa de Servicio</value>
+  </data>
+	<data name="TotalCost" xml:space="preserve">
+    <value>Costo Total</value>
+  </data>
+	<data name="PayNow" xml:space="preserve">
+    <value>Pagar Ahora</value>
+  </data>
+	<data name="Cancel" xml:space="preserve">
+    <value>Cancelar</value>
+  </data>
+	<data name="Save" xml:space="preserve">
+    <value>Guardar</value>
+  </data>
+	<data name="Add" xml:space="preserve">
+    <value>Agregar</value>
+  </data>
+	<data name="Edit" xml:space="preserve">
+    <value>Editar</value>
+  </data>
+	<data name="Delete" xml:space="preserve">
+    <value>Eliminar</value>
+  </data>
+	<data name="Upload" xml:space="preserve">
+    <value>Subir</value>
+  </data>
+	<data name="Download" xml:space="preserve">
+    <value>Descargar</value>
+  </data>
+	<data name="Submit" xml:space="preserve">
+    <value>Enviar</value>
+  </data>
+	<data name="Required" xml:space="preserve">
+    <value>Requerido</value>
+  </data>
+	<data name="Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+	<data name="Success" xml:space="preserve">
+    <value>Éxito</value>
+  </data>
+	<data name="Warning" xml:space="preserve">
+    <value>Advertencia</value>
+  </data>
+	<data name="Info" xml:space="preserve">
+    <value>Información</value>
+  </data>
+	<data name="FirstName" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+	<data name="LastName" xml:space="preserve">
+    <value>Apellido</value>
+  </data>
+	<data name="PhoneNumber" xml:space="preserve">
+    <value>Número de Teléfono</value>
+  </data>
+	<data name="AddressLine1" xml:space="preserve">
+    <value>Dirección Línea 1</value>
+  </data>
+	<data name="AddressLine2" xml:space="preserve">
+    <value>Dirección Línea 2</value>
+  </data>
+	<data name="City" xml:space="preserve">
+    <value>Ciudad</value>
+  </data>
+	<data name="State" xml:space="preserve">
+    <value>Estado</value>
+  </data>
+	<data name="PostalCode" xml:space="preserve">
+    <value>Código Postal</value>
+  </data>
+	<data name="Country" xml:space="preserve">
+    <value>País</value>
+  </data>
+	<data name="Name" xml:space="preserve">
+    <value>Nombre</value>
+  </data>
+	<data name="Quantity" xml:space="preserve">
+    <value>Cantidad</value>
+  </data>
+	<data name="UnitPrice" xml:space="preserve">
+    <value>Precio Unitario</value>
+  </data>
+	<data name="TotalPrice" xml:space="preserve">
+    <value>Precio Total</value>
+  </data>
+	<data name="ProductURL" xml:space="preserve">
+    <value>URL del Producto</value>
+  </data>
+	<data name="UploadDocument" xml:space="preserve">
+    <value>Subir Documento</value>
+  </data>
+	<data name="DocumentType" xml:space="preserve">
+    <value>Tipo de Documento</value>
+  </data>
+	<data name="Invoice" xml:space="preserve">
+    <value>Factura</value>
+  </data>
+	<data name="PaymentProof" xml:space="preserve">
+    <value>Comprobante de Pago</value>
+  </data>
+	<data name="ProductImage" xml:space="preserve">
+    <value>Imagen del Producto</value>
+  </data>
+	<data name="ShippingLabel" xml:space="preserve">
+    <value>Etiqueta de Envío</value>
+  </data>
+	<data name="CustomsDeclaration" xml:space="preserve">
+    <value>Declaración de Aduanas</value>
+  </data>
+	<data name="OtherDocumentation" xml:space="preserve">
+    <value>Otra Documentación</value>
+  </data>
+	<data name="StatusDraft" xml:space="preserve">
+    <value>Borrador</value>
+  </data>
+	<data name="StatusSubmitted" xml:space="preserve">
+    <value>Enviado</value>
+  </data>
+	<data name="StatusAwaitingDocuments" xml:space="preserve">
+    <value>Esperando Documentos</value>
+  </data>
+	<data name="StatusDocumentsReviewed" xml:space="preserve">
+    <value>Documentos Revisados</value>
+  </data>
+	<data name="StatusAwaitingPayment" xml:space="preserve">
+    <value>Esperando Pago</value>
+  </data>
+	<data name="StatusAwaitingArrival" xml:space="preserve">
+    <value>Esperando Llegada</value>
+  </data>
+	<data name="StatusReceivedInWarehouse" xml:space="preserve">
+    <value>Recibido en Almacén</value>
+  </data>
+	<data name="StatusProcessing" xml:space="preserve">
+    <value>Procesando</value>
+  </data>
+	<data name="StatusInTransit" xml:space="preserve">
+    <value>En Tránsito</value>
+  </data>
+	<data name="StatusInDelivery" xml:space="preserve">
+    <value>En Entrega</value>
+  </data>
+	<data name="StatusDelivered" xml:space="preserve">
+    <value>Entregado</value>
+  </data>
+	<data name="StatusException" xml:space="preserve">
+    <value>Excepción</value>
+  </data>
+	<data name="StatusCancelled" xml:space="preserve">
+    <value>Cancelado</value>
+  </data>
+	<data name="TypeForwarding" xml:space="preserve">
+    <value>Reenvío de Paquetes</value>
+  </data>
+	<data name="TypeCommercialImport" xml:space="preserve">
+    <value>Importación Comercial</value>
+  </data>
+	<data name="Notifications" xml:space="preserve">
+    <value>Notificaciones</value>
+  </data>
+	<data name="MarkAllAsRead" xml:space="preserve">
+    <value>Marcar Todo como Leído</value>
+  </data>
+	<data name="NoNotifications" xml:space="preserve">
+    <value>No hay notificaciones</value>
+  </data>
+	<data name="Language" xml:space="preserve">
+    <value>Idioma</value>
+  </data>
+	<data name="English" xml:space="preserve">
+    <value>Inglés</value>
+  </data>
+	<data name="Spanish" xml:space="preserve">
+    <value>Español</value>
+  </data>
+	<data name="Step1" xml:space="preserve">
+    <value>Paso 1: Crea una cuenta</value>
+  </data>
+	<data name="Step1Desc" xml:space="preserve">
+    <value>Regístrate y obtén al instante tu dirección en EE.UU. para recibir tus compras.</value>
+  </data>
+	<data name="Step2" xml:space="preserve">
+    <value>Paso 2: Realiza tus compras</value>
+  </data>
+	<data name="Step2Desc" xml:space="preserve">
+    <value>Compra en miles de tiendas en línea de EE.UU. usando tu dirección asignada.</value>
+  </data>
+	<data name="Step3" xml:space="preserve">
+    <value>Paso 3: Registra tu envío</value>
+  </data>
+	<data name="Step3Desc" xml:space="preserve">
+    <value>Solicita el envío y paga la tarifa estimada. Consolidamos tus paquetes para ahorrarte dinero.</value>
+  </data>
+	<data name="Step4" xml:space="preserve">
+    <value>Paso 4: Recibe tu seguimiento</value>
+  </data>
+	<data name="Step4Desc" xml:space="preserve">
+    <value>Te enviamos el número de rastreo para que sigas tu paquete en tiempo real.</value>
+  </data>
+	<data name="GetStarted" xml:space="preserve">
+    <value>Comenzar</value>
+  </data>
+	<data name="HowItWorks" xml:space="preserve">
+    <value>Cómo Funciona</value>
+  </data>
+	<data name="OurProcess" xml:space="preserve">
+    <value>Nuestro Proceso</value>
+  </data>
+	<data name="Users" xml:space="preserve">
+    <value>Usuarios</value>
+  </data>
+	<data name="Tenants" xml:space="preserve">
+    <value>Empresas</value>
+  </data>
+	<data name="PricingRules" xml:space="preserve">
+    <value>Reglas de Precios</value>
+  </data>
+	<data name="Reports" xml:space="preserve">
+    <value>Reportes</value>
+  </data>
+	<data name="AdminDashboard" xml:space="preserve">
+    <value>Panel de Administrador</value>
+  </data>
+	<data name="PendingShipments" xml:space="preserve">
+    <value>Envíos Pendientes</value>
+  </data>
+	<data name="AwaitingReview" xml:space="preserve">
+    <value>Esperando Revisión</value>
+  </data>
+	<data name="ReadyToShip" xml:space="preserve">
+    <value>Listo para Enviar</value>
+  </data>
+	<data name="ActiveShipments" xml:space="preserve">
+    <value>Envíos Activos</value>
+  </data>
+	<data name="CompletedShipments" xml:space="preserve">
+    <value>Envíos Completados</value>
+  </data>
+	<data name="TotalRevenue" xml:space="preserve">
+    <value>Ingresos Totales</value>
+  </data>
+	<data name="ThisMonth" xml:space="preserve">
+    <value>Este Mes</value>
+  </data>
+	<data name="ProfitMargin" xml:space="preserve">
+    <value>Margen de Beneficio</value>
+  </data>
+	<data name="UpdateStatus" xml:space="preserve">
+    <value>Actualizar Estado</value>
+  </data>
+	<data name="AddNote" xml:space="preserve">
+    <value>Agregar Nota</value>
+  </data>
+	<data name="RequestDocument" xml:space="preserve">
+    <value>Solicitar Documento</value>
+  </data>
+	<data name="AssignCourier" xml:space="preserve">
+    <value>Asignar Mensajería</value>
+  </data>
+	<data name="CourierTrackingNumber" xml:space="preserve">
+    <value>Número de Seguimiento de Mensajería</value>
+  </data>
+	<data name="AddPricingRule" xml:space="preserve">
+    <value>Agregar Regla de Precios</value>
+  </data>
+	<data name="MinWeight" xml:space="preserve">
+    <value>Peso Mín (kg)</value>
+  </data>
+	<data name="MaxWeight" xml:space="preserve">
+    <value>Peso Máx (kg)</value>
+  </data>
+	<data name="Price" xml:space="preserve">
+    <value>Precio</value>
+  </data>
+	<data name="Active" xml:space="preserve">
+    <value>Activo</value>
+  </data>
+	<data name="Inactive" xml:space="preserve">
+    <value>Inactivo</value>
+  </data>
+	<data name="StripeApiKey" xml:space="preserve">
+    <value>Clave API de Stripe</value>
+  </data>
+	<data name="StripeWebhookSecret" xml:space="preserve">
+    <value>Secreto de Webhook de Stripe</value>
+  </data>
+	<data name="UsAddress" xml:space="preserve">
+    <value>Dirección en EEUU</value>
+  </data>
+	<data name="EnableAiIntegration" xml:space="preserve">
+    <value>Activar Integración con IA</value>
+  </data>
+	<data name="OpenAiApiKey" xml:space="preserve">
+    <value>Clave API de OpenAI</value>
+  </data>
+	<data name="TenantSettings" xml:space="preserve">
+    <value>Configuración de Empresa</value>
+  </data>
+	<data name="UserRegistration" xml:space="preserve">
+    <value>Registro de Usuario</value>
+  </data>
+	<data name="ConfirmPassword" xml:space="preserve">
+    <value>Confirmar Contraseña</value>
+  </data>
+	<data name="AdminRegisterTenant" xml:space="preserve">
+    <value>Registrar Empresa</value>
+  </data>
+	<data name="TenantName" xml:space="preserve">
+    <value>Nombre de Empresa</value>
+  </data>
+	<data name="TenantSlug" xml:space="preserve">
+    <value>Slug de Empresa</value>
+  </data>
+	<data name="LogoUrl" xml:space="preserve">
+    <value>URL del Logo</value>
+  </data>
+	<data name="PrimaryColor" xml:space="preserve">
+    <value>Color Primario</value>
+  </data>
+	<data name="SecondaryColor" xml:space="preserve">
+    <value>Color Secundario</value>
+  </data>
+	<data name="IsActive" xml:space="preserve">
+    <value>Está Activo</value>
+  </data>
+	<data name="ParentTenant" xml:space="preserve">
+    <value>Empresa Matriz</value>
+  </data>
+	<data name="ErrorEmailRequired" xml:space="preserve">
+    <value>El correo electrónico es obligatorio</value>
+  </data>
+	<data name="ErrorInvalidEmail" xml:space="preserve">
+    <value>Formato de correo electrónico inválido</value>
+  </data>
+	<data name="ErrorPasswordRequired" xml:space="preserve">
+    <value>La contraseña es obligatoria</value>
+  </data>
+	<data name="ErrorPasswordLength" xml:space="preserve">
+    <value>La contraseña debe tener al menos 6 caracteres</value>
+  </data>
+	<data name="ErrorPasswordsMustMatch" xml:space="preserve">
+    <value>Las contraseñas deben coincidir</value>
+  </data>
+	<data name="ErrorFieldRequired" xml:space="preserve">
+    <value>Este campo es obligatorio</value>
+  </data>
+	<data name="ErrorInvalidNumber" xml:space="preserve">
+    <value>Número inválido</value>
+  </data>
+	<data name="ErrorInvalidUrl" xml:space="preserve">
+    <value>URL inválida</value>
+  </data>
+	<data name="ErrorInvalidDecimal" xml:space="preserve">
+    <value>Valor decimal inválido</value>
+  </data>
+
+
+	
+	<xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+		<xsd:element name="root" msdata:IsDataSet="true">
+			<xsd:complexType>
+				<xsd:choice maxOccurs="unbounded">
+					<xsd:element name="data">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+								<xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" msdata:Ordinal="1" />
+							<xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+							<xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+						</xsd:complexType>
+					</xsd:element>
+					<xsd:element name="resheader">
+						<xsd:complexType>
+							<xsd:sequence>
+								<xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+							</xsd:sequence>
+							<xsd:attribute name="name" type="xsd:string" use="required" />
+						</xsd:complexType>
+					</xsd:element>
+				</xsd:choice>
+			</xsd:complexType>
+		</xsd:element>
+	</xsd:schema>
+	<resheader name="resmimetype">
+		<value>text/microsoft-resx</value>
+	</resheader>
+	<resheader name="version">
+		<value>1.3</value>
+	</resheader>
+	<resheader name="reader">
+		<value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+	<resheader name="writer">
+		<value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=2.0.3500.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+	</resheader>
+</root>

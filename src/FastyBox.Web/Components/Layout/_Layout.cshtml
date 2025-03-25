@@ -1,0 +1,49 @@
+﻿@using Microsoft.AspNetCore.Components.Web
+@namespace FastyBox.Web.Pages
+@addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <base href="~/" />
+    <link rel="stylesheet" href="css/app.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="FastyBox.Web.styles.css" rel="stylesheet" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <component type="typeof(HeadOutlet)" render-mode="ServerPrerendered" />
+
+    <!-- Stripe.js -->
+    <script src="https://js.stripe.com/v3/"></script>
+</head>
+<body>
+    @RenderBody()
+
+    <div id="blazor-error-ui" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50" style="display: none;">
+        <div class="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-auto shadow-soft-xl">
+            <div class="flex items-center text-red-600 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+                <h3 class="text-lg font-medium">Error</h3>
+            </div>
+
+            <environment include="Staging,Production">
+                <p class="text-gray-700 dark:text-gray-300 mb-4">An error has occurred. This application may no longer respond until reloaded.</p>
+            </environment>
+            <environment include="Development">
+                <p class="text-gray-700 dark:text-gray-300 mb-4">An unhandled exception has occurred. See browser dev tools for details.</p>
+            </environment>
+
+            <div class="flex justify-end space-x-3">
+                <a href="" class="btn btn-outline reload">Reload</a>
+                <a class="btn btn-primary dismiss">Dismiss</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="_framework/blazor.server.js"></script>
+    <script src="js/site.js"></script>
+</body>
+</html>
